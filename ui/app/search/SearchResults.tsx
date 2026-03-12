@@ -9,6 +9,7 @@ import { searchEmails } from "@/app/actions/actions";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SemiParserEmail } from "@/hooks/parseEmail";
 import { Copy, RefreshCw, Mail, Inbox } from "lucide-react";
+import BannerSlot from "@/components/BannerSlot";
 
 export interface Email {
   date: string;
@@ -75,6 +76,7 @@ function SearchResultsContent() {
 
   return (
     <div className="flex flex-col h-screen">
+      <BannerSlot position="inbox_top" />
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border flex-shrink-0">
         <Link
@@ -163,6 +165,7 @@ function SearchResultsContent() {
           )}
         </div>
       </div>
+      <BannerSlot position="inbox_bottom" />
     </div>
   );
 }

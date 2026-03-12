@@ -22,5 +22,16 @@ export async function runMigrations() {
     )
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS banners (
+      id         BIGSERIAL PRIMARY KEY,
+      position   TEXT NOT NULL,
+      content    TEXT NOT NULL,
+      enabled    BOOLEAN NOT NULL DEFAULT true,
+      sort_order INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
   console.log("Migrations complete");
 }

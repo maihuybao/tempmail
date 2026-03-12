@@ -141,3 +141,62 @@ export async function insertEmail(
   );
   return { ok: true };
 }
+
+// --- Banners ---
+
+export interface Banner {
+  id: number;
+  position: string;
+  content: string;
+  enabled: boolean;
+  sort_order: number;
+}
+
+const VALID_POSITIONS = ["home_top", "home_bottom", "inbox_top", "inbox_bottom"];
+
+export async function getBannersByPosition(position: string): Promise<Banner[]> {
+  const result = await pool.query(
+    "SELECT id, position, content, enabled, sort_order FROM banners WHERE position = $1 AND enabled = true ORDER BY sort_order ASC, id ASC",
+    [position]
+  );
+  return result.rows;
+}
+
+export async function listBanners(): Promise<Banner[]> {
+  await requireAdmin();
+  const result = await pool.query(
+    "SELECT id, position, content, enabled, sort_order FROM banners ORDER BY position, sort_order, id"
+  );
+  return result.rows;
+}
+
+export async function upsertBanner(
+  id: number | null,
+  position: string,
+  content: string,
+  enabled: boolean,
+  sort_order: number
+) {
+  await requireAdmin();
+  if (!VALID_POSITIONS.includes(position)) {
+    return { ok: false, error: "Invalid position" };
+  }
+  if (id) {
+    await pool.query(
+      "UPDATE banners SET position=$1, content=$2, enabled=$3, sort_order=$4 WHERE id=$5",
+      [position, content, enabled, sort_order, id]
+    );
+  } else {
+    await pool.query(
+      "INSERT INTO banners (position, content, enabled, sort_order) VALUES ($1, $2, $3, $4)",
+      [position, content, enabled, sort_order]
+    );
+  }
+  return { ok: true };
+}
+
+export async function deleteBanner(id: number) {
+  await requireAdmin();
+  await pool.query("DELETE FROM banners WHERE id = $1", [id]);
+  return { ok: true };
+}

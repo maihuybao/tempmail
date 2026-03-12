@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
+import BannerSlot from "@/components/BannerSlot";
 import { Mail, ChevronDown } from "lucide-react";
 
 const domains = (process.env.NEXT_PUBLIC_EMAIL_DOMAINS || "foxycrown.net").split(",");
@@ -34,8 +35,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-md space-y-8 text-center">
+    <div className="min-h-screen flex flex-col">
+      <BannerSlot position="home_top" />
+      <div className="flex-1 flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md space-y-8 text-center">
         <div className="flex items-center justify-center gap-2">
           <Mail className="w-8 h-8 text-accent" />
           <h1 className="text-3xl font-semibold tracking-tight">Flux Mail</h1>
@@ -95,7 +98,9 @@ export default function Home() {
         <p className="text-fg-muted text-xs">
           Public inbox &middot; Auto-deletes in 7 days
         </p>
+        </div>
       </div>
+      <BannerSlot position="home_bottom" />
     </div>
   );
 }
