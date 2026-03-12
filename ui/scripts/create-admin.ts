@@ -5,12 +5,18 @@ import bcrypt from "bcryptjs";
 
 // Load .env since this runs outside Next.js
 try {
-  const envPath = resolve(import.meta.dirname, "../.env");
+  const envPath = resolve(new URL("..", import.meta.url).pathname, ".env");
   for (const line of readFileSync(envPath, "utf-8").split("\n")) {
-    const match = line.match(/^\s*([\w]+)\s*=\s*(.+)\s*$/);
+    const match = line.match(/^\s*([\w]+)\s*=\s*(.+?)\s*$/);
     if (match && !process.env[match[1]]) process.env[match[1]] = match[2];
   }
 } catch {}
+
+if (!process.env.DATABASE_URL) {
+  console.error("Error: DATABASE_URL not set. Check .env or pass it inline:");
+  console.error('  DATABASE_URL="postgresql://..." npx tsx scripts/create-admin.ts <user> <pass>');
+  process.exit(1);
+}
 
 async function main() {
   const [username, password] = process.argv.slice(2);
