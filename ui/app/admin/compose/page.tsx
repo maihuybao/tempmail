@@ -4,6 +4,7 @@ import { useState } from "react";
 import { insertEmail } from "@/app/actions/admin";
 import { useRouter } from "next/navigation";
 import { inputClass } from "@/lib/ui";
+import { toast } from "sonner";
 
 export default function AdminComposePage() {
   const [sender, setSender] = useState("");
@@ -18,15 +19,16 @@ export default function AdminComposePage() {
     setStatus("sending");
     try {
       await insertEmail(sender, recipient, subject, body);
-      setStatus("sent");
+      toast.success("Email created");
       setTimeout(() => router.push("/admin/emails"), 1000);
     } catch {
-      setStatus("error");
+      toast.error("Failed to create email");
+      setStatus("idle");
     }
   };
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6">
       <h1 className="text-lg font-semibold mb-6">Compose Email</h1>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -73,17 +75,6 @@ export default function AdminComposePage() {
             className={inputClass + " resize-y"}
           />
         </div>
-
-        {status === "sent" && (
-          <div className="text-sm text-green-500 bg-green-500/10 rounded-lg px-4 py-2.5">
-            Email created. Redirecting...
-          </div>
-        )}
-        {status === "error" && (
-          <div className="text-sm text-red-500 bg-red-500/10 rounded-lg px-4 py-2.5">
-            Failed to create email.
-          </div>
-        )}
 
         <button
           type="submit"

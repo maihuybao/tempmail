@@ -22,7 +22,7 @@ export default function EmailDetail({ email, onBack }: EmailDetailProps) {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         <h1 className="text-xl font-semibold mb-4">
           {email.data.subject || "(No Subject)"}
         </h1>
@@ -53,7 +53,7 @@ export default function EmailDetail({ email, onBack }: EmailDetailProps) {
           </div>
         </div>
 
-        <div className="border-t border-border pt-4">
+        <div className="border-t border-border pt-4 overflow-x-auto">
           {htmlContent ? (
             <div
               className="email-body text-sm"

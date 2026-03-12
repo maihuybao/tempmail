@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getSettings, saveSettings } from "@/app/actions/admin";
 import { Save } from "lucide-react";
 import { inputClass } from "@/lib/ui";
+import { toast } from "sonner";
 
 export default function AdminSettingsPage() {
   const [cfToken, setCfToken] = useState("");
@@ -13,7 +14,6 @@ export default function AdminSettingsPage() {
   const [siteThumbnailUrl, setSiteThumbnailUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
 
   useEffect(() => {
     getSettings().then((s) => {
@@ -28,11 +28,9 @@ export default function AdminSettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    setMsg("");
     await saveSettings(cfToken, mailHost, siteName, siteLogoUrl, siteThumbnailUrl);
     setSaving(false);
-    setMsg("Saved");
-    setTimeout(() => setMsg(""), 2000);
+    toast.success("Settings saved");
   };
 
   if (loading) {
@@ -40,7 +38,7 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-lg">
+    <div className="p-4 sm:p-6 space-y-6">
       <h1 className="text-lg font-semibold">Settings</h1>
 
       <div className="space-y-4">
@@ -123,7 +121,6 @@ export default function AdminSettingsPage() {
             <Save className="w-3.5 h-3.5" />
             {saving ? "Saving..." : "Save"}
           </button>
-          {msg && <span className="text-sm text-accent">{msg}</span>}
         </div>
       </div>
     </div>

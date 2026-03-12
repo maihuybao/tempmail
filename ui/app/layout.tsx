@@ -1,4 +1,5 @@
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { Toaster } from "sonner";
 import "@/styles/globals.css";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/react";
@@ -45,6 +46,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ThemeProvider>
+          <Toaster richColors position="top-right" />
           <SpeedInsights />
           <Analytics />
           <main className="min-h-screen">{children}</main>

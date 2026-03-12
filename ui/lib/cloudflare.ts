@@ -22,6 +22,18 @@ async function cfFetch(
   return res.json() as Promise<CFResponse>;
 }
 
+export async function findZoneId(
+  token: string,
+  domain: string
+): Promise<string | null> {
+  const res = await cfFetch(`/zones?name=${encodeURIComponent(domain)}`, token, {
+    method: "GET",
+  });
+  if (!res.success) return null;
+  const zones = res.result as Record<string, unknown>[];
+  return zones.length > 0 ? (zones[0].id as string) : null;
+}
+
 export async function createMXRecord(
   token: string,
   zoneId: string,

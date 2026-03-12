@@ -7,7 +7,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 
-import { setupDomainDNS, removeDomainDNS } from "@/lib/cloudflare";
+import { setupDomainDNS, removeDomainDNS, findZoneId } from "@/lib/cloudflare";
 
 const COOKIE_NAME = "admin_token";
 
@@ -57,16 +57,40 @@ async function requireAdmin() {
 
 // --- Emails ---
 
-export async function listEmails(page: number = 1, pageSize: number = 30) {
+export async function listEmails(
+  page: number = 1,
+  pageSize: number = 30,
+  search: string = "",
+  sortDir: "ASC" | "DESC" = "DESC"
+) {
   await requireAdmin();
   const offset = (page - 1) * pageSize;
+  const q = search.trim();
+
+  let dataQuery: string;
+  let countQuery: string;
+  let params: (string | number)[];
+  let countParams: string[];
+
+  if (q) {
+    const like = `%${q}%`;
+    dataQuery = `SELECT id, date, sender, recipients, data FROM mail
+      WHERE sender ILIKE $1 OR recipients ILIKE $1 OR data ILIKE $1
+      ORDER BY id ${sortDir} LIMIT $2 OFFSET $3`;
+    params = [like, pageSize, offset];
+    countQuery = `SELECT COUNT(*)::int AS total FROM mail
+      WHERE sender ILIKE $1 OR recipients ILIKE $1 OR data ILIKE $1`;
+    countParams = [like];
+  } else {
+    dataQuery = `SELECT id, date, sender, recipients, data FROM mail ORDER BY id ${sortDir} LIMIT $1 OFFSET $2`;
+    params = [pageSize, offset];
+    countQuery = "SELECT COUNT(*)::int AS total FROM mail";
+    countParams = [];
+  }
 
   const [dataResult, countResult] = await Promise.all([
-    pool.query(
-      "SELECT id, date, sender, recipients, data FROM mail ORDER BY id ASC LIMIT $1 OFFSET $2",
-      [pageSize, offset]
-    ),
-    pool.query("SELECT COUNT(*)::int AS total FROM mail"),
+    pool.query(dataQuery, params),
+    pool.query(countQuery, countParams),
   ]);
 
   const emails = [];
@@ -108,6 +132,34 @@ export async function getEmail(id: number) {
 export async function deleteEmail(id: number) {
   await requireAdmin();
   await pool.query("DELETE FROM mail WHERE id = $1", [id]);
+  return { ok: true };
+}
+
+export async function updateEmail(
+  id: number,
+  sender: string,
+  recipient: string,
+  subject: string,
+  body: string
+) {
+  await requireAdmin();
+  const row = await pool.query("SELECT date FROM mail WHERE id = $1", [id]);
+  if (!row.rows[0]) return { ok: false, error: "Email not found" };
+  const date = row.rows[0].date;
+  const mime = [
+    `From: ${sender}`,
+    `To: ${recipient}`,
+    `Subject: ${subject}`,
+    `Date: ${date}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/plain; charset=UTF-8`,
+    "",
+    body,
+  ].join("\r\n");
+  await pool.query(
+    "UPDATE mail SET sender = $1, recipients = $2, data = $3 WHERE id = $4",
+    [`<${sender}>`, `<${recipient}>`, mime, id]
+  );
   return { ok: true };
 }
 
@@ -230,26 +282,33 @@ export async function getActiveDomains(): Promise<string[]> {
 }
 
 export async function addDomain(
-  domain: string,
-  cfZoneId: string
+  domain: string
 ): Promise<{ ok: boolean; error?: string; dnsErrors?: string[] }> {
   await requireAdmin();
 
+  const cleanDomain = domain.toLowerCase().trim();
   await pool.query(
-    "INSERT INTO domains (domain, cf_zone_id) VALUES ($1, $2)",
-    [domain.toLowerCase().trim(), cfZoneId.trim() || null]
+    "INSERT INTO domains (domain) VALUES ($1)",
+    [cleanDomain]
   );
 
-  if (cfZoneId.trim()) {
-    const settings = await getSettings();
-    if (settings.cf_api_token && settings.mail_server_host) {
-      const dns = await setupDomainDNS(
-        settings.cf_api_token,
-        cfZoneId.trim(),
-        domain.toLowerCase().trim(),
-        settings.mail_server_host
+  const settings = await getSettings();
+  if (settings.cf_api_token) {
+    const zoneId = await findZoneId(settings.cf_api_token, cleanDomain);
+    if (zoneId) {
+      await pool.query(
+        "UPDATE domains SET cf_zone_id = $1 WHERE domain = $2",
+        [zoneId, cleanDomain]
       );
-      if (!dns.ok) return { ok: true, dnsErrors: dns.errors };
+      if (settings.mail_server_host) {
+        const dns = await setupDomainDNS(
+          settings.cf_api_token,
+          zoneId,
+          cleanDomain,
+          settings.mail_server_host
+        );
+        if (!dns.ok) return { ok: true, dnsErrors: dns.errors };
+      }
     }
   }
 

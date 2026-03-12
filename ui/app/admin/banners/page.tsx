@@ -7,8 +7,9 @@ import {
   deleteBanner,
   Banner,
 } from "@/app/actions/admin";
-import { Trash2, Pencil, Plus, X, Eye, EyeOff } from "lucide-react";
+import { Trash2, Pencil, Plus, X, Eye, EyeOff, ToggleLeft, ToggleRight } from "lucide-react";
 import { inputClass } from "@/lib/ui";
+import { toast } from "sonner";
 
 const POSITIONS = [
   { value: "home_top", label: "Home - Top" },
@@ -53,13 +54,24 @@ export default function AdminBannersPage() {
     setSaving(true);
     await upsertBanner(form.id, form.position, form.content, form.enabled, form.sort_order);
     setSaving(false);
+    toast.success(form.id ? "Banner updated" : "Banner created");
     setForm(null);
     fetch();
   };
 
   const handleDelete = async (id: number) => {
-    await deleteBanner(id);
-    fetch();
+    toast("Delete this banner?", {
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          await deleteBanner(id);
+          toast.success("Banner deleted");
+          fetch();
+        },
+      },
+      cancel: { label: "Cancel", onClick: () => {} },
+      duration: 5000,
+    });
   };
 
   const handleEdit = (b: Banner) => {
@@ -73,10 +85,16 @@ export default function AdminBannersPage() {
     setPreview(false);
   };
 
+  const handleToggle = async (b: Banner) => {
+    await upsertBanner(b.id, b.position, b.content, !b.enabled, b.sort_order);
+    toast.success(b.enabled ? "Banner disabled" : "Banner enabled");
+    fetch();
+  };
+
   const posLabel = (v: string) => POSITIONS.find((p) => p.value === v)?.label ?? v;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Banners</h1>
         {!form && (
@@ -100,7 +118,7 @@ export default function AdminBannersPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs text-fg-muted mb-1">Position</label>
               <select
@@ -128,7 +146,7 @@ export default function AdminBannersPage() {
                   type="checkbox"
                   checked={form.enabled}
                   onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
-                  className="rounded"
+                  className="cb"
                 />
                 Enabled
               </label>
@@ -178,15 +196,15 @@ export default function AdminBannersPage() {
       ) : banners.length === 0 ? (
         <div className="text-sm text-fg-muted py-12 text-center">No banners yet</div>
       ) : (
-        <div className="border border-border rounded-lg overflow-hidden">
+        <>
+        <div className="hidden sm:block border border-border rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-bg-subtle border-b border-border">
                 <th className="text-left px-3 py-2.5 font-medium text-fg-muted">Position</th>
                 <th className="text-left px-3 py-2.5 font-medium text-fg-muted">Preview</th>
                 <th className="text-left px-3 py-2.5 font-medium text-fg-muted w-16">Order</th>
-                <th className="text-left px-3 py-2.5 font-medium text-fg-muted w-20">Status</th>
-                <th className="text-right px-3 py-2.5 font-medium text-fg-muted w-24">Actions</th>
+                <th className="text-right px-3 py-2.5 font-medium text-fg-muted w-28">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -197,29 +215,15 @@ export default function AdminBannersPage() {
                     {b.content.slice(0, 80)}{b.content.length > 80 ? "..." : ""}
                   </td>
                   <td className="px-3 py-2.5 text-fg-muted">{b.sort_order}</td>
-                  <td className="px-3 py-2.5">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      b.enabled
-                        ? "bg-green-500/10 text-green-500"
-                        : "bg-fg-muted/10 text-fg-muted"
-                    }`}>
-                      {b.enabled ? "Active" : "Off"}
-                    </span>
-                  </td>
                   <td className="px-3 py-2.5 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => handleEdit(b)}
-                        className="p-1.5 rounded hover:bg-bg-hover transition-colors"
-                        title="Edit"
-                      >
+                      <button onClick={() => handleToggle(b)} className="p-1.5 rounded hover:bg-bg-hover transition-colors" title={b.enabled ? "Disable" : "Enable"}>
+                        {b.enabled ? <ToggleRight className="w-4 h-4 text-green-500" /> : <ToggleLeft className="w-4 h-4 text-fg-muted" />}
+                      </button>
+                      <button onClick={() => handleEdit(b)} className="p-1.5 rounded hover:bg-bg-hover transition-colors" title="Edit">
                         <Pencil className="w-3.5 h-3.5 text-fg-muted" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(b.id)}
-                        className="p-1.5 rounded hover:bg-red-500/10 transition-colors"
-                        title="Delete"
-                      >
+                      <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded hover:bg-red-500/10 transition-colors" title="Delete">
                         <Trash2 className="w-3.5 h-3.5 text-red-500" />
                       </button>
                     </div>
@@ -229,6 +233,33 @@ export default function AdminBannersPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile cards */}
+        <div className="sm:hidden space-y-2">
+          {banners.map((b) => (
+            <div key={b.id} className="border border-border rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{posLabel(b.position)}</p>
+                  <p className="text-xs text-fg-muted">Order: {b.sort_order}</p>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button onClick={() => handleToggle(b)} className="p-1.5 rounded hover:bg-bg-hover transition-colors" title={b.enabled ? "Disable" : "Enable"}>
+                    {b.enabled ? <ToggleRight className="w-4 h-4 text-green-500" /> : <ToggleLeft className="w-4 h-4 text-fg-muted" />}
+                  </button>
+                  <button onClick={() => handleEdit(b)} className="p-1.5 rounded hover:bg-bg-hover transition-colors" title="Edit">
+                    <Pencil className="w-3.5 h-3.5 text-fg-muted" />
+                  </button>
+                  <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded hover:bg-red-500/10 transition-colors" title="Delete">
+                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-fg-muted font-mono truncate">{b.content.slice(0, 60)}{b.content.length > 60 ? "..." : ""}</p>
+            </div>
+          ))}
+        </div>
+        </>
       )}
     </div>
   );
