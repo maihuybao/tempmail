@@ -12,7 +12,7 @@ export default function Home() {
   const [domains, setDomains] = useState<string[]>([]);
   const [domain, setDomain] = useState("");
   const [open, setOpen] = useState(false);
-  const [siteName, setSiteName] = useState("Flux Mail");
+  const [siteName, setSiteName] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 

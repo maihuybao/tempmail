@@ -13,7 +13,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [siteName, setSiteName] = useState("Flux Mail");
+  const [siteName, setSiteName] = useState("");
 
   useEffect(() => {
     getSiteConfig().then((c) => setSiteName(c.site_name));

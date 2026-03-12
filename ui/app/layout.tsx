@@ -9,13 +9,13 @@ import type { Metadata } from "next";
 const inter = Inter({ subsets: ["latin"] });
 
 export async function generateMetadata(): Promise<Metadata> {
-  let config = { site_name: "Flux Mail", site_logo_url: "", site_thumbnail_url: "" };
+  let config = { site_name: "", site_logo_url: "", site_thumbnail_url: "" };
   try {
     config = await getSiteConfig();
   } catch {
     // DB unavailable at build time — use defaults
   }
-  const title = config.site_name || "Flux Mail";
+  const title = config.site_name || "Temp Mail";
   const description = "Temporary email, no signup required. Auto-deletes in 7 days.";
 
   return {

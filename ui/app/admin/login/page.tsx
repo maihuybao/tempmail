@@ -11,7 +11,7 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [siteName, setSiteName] = useState("Flux Mail");
+  const [siteName, setSiteName] = useState("");
   const router = useRouter();
 
   useEffect(() => {

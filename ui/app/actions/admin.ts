@@ -314,7 +314,7 @@ export async function getSettings(): Promise<{
   return {
     cf_api_token: map.cf_api_token || "",
     mail_server_host: map.mail_server_host || "",
-    site_name: map.site_name || "Flux Mail",
+    site_name: map.site_name ?? "",
     site_logo_url: map.site_logo_url || "",
     site_thumbnail_url: map.site_thumbnail_url || "",
   };
@@ -356,7 +356,7 @@ export async function getSiteConfig(): Promise<{
   const map: Record<string, string> = {};
   for (const row of result.rows) map[row.key] = row.value;
   return {
-    site_name: map.site_name || "Flux Mail",
+    site_name: map.site_name ?? "",
     site_logo_url: map.site_logo_url || "",
     site_thumbnail_url: map.site_thumbnail_url || "",
   };
