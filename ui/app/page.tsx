@@ -36,11 +36,22 @@ export default function Home() {
 
   const handleSearch = () => {
     const trimmed = input.trim();
-    const username = trimmed
-      ? trimmed.includes("@") ? trimmed.split("@")[0] : trimmed
-      : Math.random().toString(36).slice(2, 10);
+    let username: string;
+    let selectedDomain: string;
+
+    if (!trimmed) {
+      username = Math.random().toString(36).slice(2, 10);
+      selectedDomain = domains[Math.floor(Math.random() * domains.length)] || domain;
+    } else if (trimmed.includes("@")) {
+      username = trimmed.split("@")[0];
+      selectedDomain = trimmed.split("@")[1] || domain;
+    } else {
+      username = trimmed;
+      selectedDomain = domain;
+    }
+
     router.push(
-      `/search?q=${encodeURIComponent(username.toLowerCase())}&d=${encodeURIComponent(domain)}`
+      `/search?q=${encodeURIComponent(username.toLowerCase())}&d=${encodeURIComponent(selectedDomain.toLowerCase())}`
     );
   };
 

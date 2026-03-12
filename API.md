@@ -34,8 +34,6 @@ Lấy danh sách email của một địa chỉ.
 
 #### 400 Bad Request
 
-Thiếu hoặc sai param `email`:
-
 ```json
 {
   "ok": false,
@@ -43,17 +41,80 @@ Thiếu hoặc sai param `email`:
 }
 ```
 
-#### 500 Internal Server Error
+### Ví dụ
+
+```bash
+curl "https://your-domain.com/api/inbox?email=test@flux.shubh.sh"
+```
+
+---
+
+## GET `/api/domains`
+
+Lấy danh sách domain đang hoạt động.
+
+### Response
+
+#### 200 OK
 
 ```json
 {
-  "ok": false,
-  "error": "Internal server error"
+  "ok": true,
+  "domains": ["foxycrown.net", "locketgold.me"]
 }
 ```
 
 ### Ví dụ
 
 ```bash
-curl "https://your-domain.com/api/inbox?email=test@flux.shubh.sh"
+curl "https://your-domain.com/api/domains"
+```
+
+---
+
+## GET `/api/generate`
+
+Tạo một địa chỉ email ngẫu nhiên (random username + random domain).
+
+### Response
+
+#### 200 OK
+
+```json
+{
+  "ok": true,
+  "email": "k7x2m9qf@foxycrown.net",
+  "username": "k7x2m9qf",
+  "domain": "foxycrown.net"
+}
+```
+
+#### 503 Service Unavailable
+
+Không có domain nào đang hoạt động:
+
+```json
+{
+  "ok": false,
+  "error": "No active domains available"
+}
+```
+
+### Ví dụ
+
+```bash
+curl "https://your-domain.com/api/generate"
+```
+
+---
+
+### Lỗi chung
+
+Tất cả endpoint trả `500` khi có lỗi server:
+
+```json
+{
+  "ok": false,
+  "error": "Internal server error"
+}
 ```
