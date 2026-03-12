@@ -364,9 +364,10 @@ export async function getSettings(): Promise<{
   site_name: string;
   site_logo_url: string;
   site_thumbnail_url: string;
+  random_email_length: number;
 }> {
   const result = await pool.query(
-    "SELECT key, value FROM settings WHERE key IN ('cf_api_token', 'mail_server_host', 'site_name', 'site_logo_url', 'site_thumbnail_url')"
+    "SELECT key, value FROM settings WHERE key IN ('cf_api_token', 'mail_server_host', 'site_name', 'site_logo_url', 'site_thumbnail_url', 'random_email_length')"
   );
   const map: Record<string, string> = {};
   for (const row of result.rows) map[row.key] = row.value;
@@ -376,6 +377,7 @@ export async function getSettings(): Promise<{
     site_name: map.site_name ?? "",
     site_logo_url: map.site_logo_url || "",
     site_thumbnail_url: map.site_thumbnail_url || "",
+    random_email_length: parseInt(map.random_email_length) || 8,
   };
 }
 
@@ -384,7 +386,8 @@ export async function saveSettings(
   mailServerHost: string,
   siteName: string = "",
   siteLogoUrl: string = "",
-  siteThumbnailUrl: string = ""
+  siteThumbnailUrl: string = "",
+  randomEmailLength: number = 8
 ): Promise<{ ok: boolean }> {
   await requireAdmin();
   const pairs: [string, string][] = [
@@ -393,6 +396,7 @@ export async function saveSettings(
     ["site_name", siteName],
     ["site_logo_url", siteLogoUrl],
     ["site_thumbnail_url", siteThumbnailUrl],
+    ["random_email_length", String(Math.max(4, Math.min(20, randomEmailLength)))],
   ];
   for (const [key, value] of pairs) {
     await pool.query(
@@ -408,9 +412,10 @@ export async function getSiteConfig(): Promise<{
   site_name: string;
   site_logo_url: string;
   site_thumbnail_url: string;
+  random_email_length: number;
 }> {
   const result = await pool.query(
-    "SELECT key, value FROM settings WHERE key IN ('site_name', 'site_logo_url', 'site_thumbnail_url')"
+    "SELECT key, value FROM settings WHERE key IN ('site_name', 'site_logo_url', 'site_thumbnail_url', 'random_email_length')"
   );
   const map: Record<string, string> = {};
   for (const row of result.rows) map[row.key] = row.value;
@@ -418,5 +423,6 @@ export async function getSiteConfig(): Promise<{
     site_name: map.site_name ?? "",
     site_logo_url: map.site_logo_url || "",
     site_thumbnail_url: map.site_thumbnail_url || "",
+    random_email_length: parseInt(map.random_email_length) || 8,
   };
 }

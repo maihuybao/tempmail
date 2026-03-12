@@ -13,6 +13,7 @@ export default function Home() {
   const [domain, setDomain] = useState("");
   const [open, setOpen] = useState(false);
   const [siteName, setSiteName] = useState("");
+  const [randomLen, setRandomLen] = useState(8);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -21,7 +22,10 @@ export default function Home() {
       setDomains(d);
       setDomain(d[0]);
     });
-    getSiteConfig().then((c) => setSiteName(c.site_name));
+    getSiteConfig().then((c) => {
+      setSiteName(c.site_name);
+      setRandomLen(c.random_email_length);
+    });
   }, []);
 
   useEffect(() => {
@@ -40,7 +44,7 @@ export default function Home() {
     let selectedDomain: string;
 
     if (!trimmed) {
-      username = Math.random().toString(36).slice(2, 10);
+      username = Math.random().toString(36).slice(2, 2 + randomLen);
       selectedDomain = domains[Math.floor(Math.random() * domains.length)] || domain;
     } else if (trimmed.includes("@")) {
       username = trimmed.split("@")[0];

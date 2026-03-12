@@ -12,6 +12,7 @@ export default function AdminSettingsPage() {
   const [siteName, setSiteName] = useState("");
   const [siteLogoUrl, setSiteLogoUrl] = useState("");
   const [siteThumbnailUrl, setSiteThumbnailUrl] = useState("");
+  const [randomEmailLength, setRandomEmailLength] = useState(8);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -22,13 +23,14 @@ export default function AdminSettingsPage() {
       setSiteName(s.site_name);
       setSiteLogoUrl(s.site_logo_url);
       setSiteThumbnailUrl(s.site_thumbnail_url);
+      setRandomEmailLength(s.random_email_length);
       setLoading(false);
     });
   }, []);
 
   const handleSave = async () => {
     setSaving(true);
-    await saveSettings(cfToken, mailHost, siteName, siteLogoUrl, siteThumbnailUrl);
+    await saveSettings(cfToken, mailHost, siteName, siteLogoUrl, siteThumbnailUrl, randomEmailLength);
     setSaving(false);
     toast.success("Settings saved");
   };
@@ -109,6 +111,25 @@ export default function AdminSettingsPage() {
           />
           <p className="text-xs text-fg-muted mt-1">
             Used as Open Graph image for social sharing
+          </p>
+        </div>
+
+        <hr className="border-border" />
+
+        <div>
+          <label className="block text-xs text-fg-muted mb-1">
+            Random Email Length
+          </label>
+          <input
+            type="number"
+            min={4}
+            max={20}
+            value={randomEmailLength}
+            onChange={(e) => setRandomEmailLength(Number(e.target.value))}
+            className={inputClass}
+          />
+          <p className="text-xs text-fg-muted mt-1">
+            Username length when generating random emails (4–20)
           </p>
         </div>
 
