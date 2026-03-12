@@ -13,7 +13,7 @@ fn main() {
     }
 
     let addr: std::net::SocketAddr = "0.0.0.0:25".parse().unwrap();
-    let domain: String = String::from("mail.flux.shubh.sh");
+    let domain: String = std::env::var("MAIL_DOMAIN").unwrap_or_else(|_| String::from("localhost"));
 
     clear_old_mails(time::Duration::from_secs(3600));
     if let Err(e) = start_server(addr, domain) {

@@ -27,8 +27,8 @@ pnpm lint                      # ESLint (next/core-web-vitals + next/typescript,
 ```
 
 ### Environment variables
-Rust backend needs: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` (see `.env.sample`)
-Next.js frontend needs: `DATABASE_URL` (Postgres connection string)
+Rust backend needs: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `MAIL_DOMAIN` (see `.env.sample`)
+Next.js frontend needs: `DATABASE_URL` (Postgres connection string), `NEXT_PUBLIC_EMAIL_DOMAIN` (e.g. `flux.shubh.sh`) (see `ui/.env.example`)
 
 ## CI
 
@@ -75,9 +75,10 @@ Initial → (EHLO/HELO) → Greeted → (MAIL FROM) → AwaitingRecipient
 - Connection timeout: 300s per SMTP session, 30s per read
 - Old mail cleanup: background thread in `main.rs` calls `clear_old_mails` every 3600s (deletes mail older than 7 days)
 
-### Hardcoded domains (must change for custom deployment)
-- SMTP domain: `mail.flux.shubh.sh` in `crates/smtp/src/main.rs:16`
-- UI domain: `flux.shubh.sh` in `ui/app/search/SearchResults.tsx` (lines 38, 58, 63)
+### Domain configuration
+Both domains are configured via environment variables:
+- SMTP domain: `MAIL_DOMAIN` env var in Rust backend (used in `crates/smtp/src/main.rs`)
+- UI domain: `NEXT_PUBLIC_EMAIL_DOMAIN` env var in Next.js frontend (used in `ui/app/search/SearchResults.tsx`)
 
 ### Deployment
 - SMTP server: VPS with systemd, or via nixpacks (`nixpacks.toml` exposes port 25)

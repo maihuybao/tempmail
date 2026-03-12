@@ -32,10 +32,12 @@ function SearchResultsContent() {
     if (!query) router.push("/");
   }, [query, router]);
 
+  const domain = process.env.NEXT_PUBLIC_EMAIL_DOMAIN || "mail.foxycrown.net";
+
   const fetchEmails = useCallback(async () => {
     if (!query) return;
     try {
-      const result = await searchEmails(`${query}@flux.shubh.sh`);
+      const result = await searchEmails(`${query}@${domain}`);
       setEmails(result);
     } catch (error) {
       console.error("Failed to fetch emails:", error);
@@ -43,7 +45,7 @@ function SearchResultsContent() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [query]);
+  }, [query, domain]);
 
   useEffect(() => {
     fetchEmails();
@@ -55,12 +57,12 @@ function SearchResultsContent() {
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(`${query}@flux.shubh.sh`);
+    navigator.clipboard.writeText(`${query}@${domain}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const fullEmail = `${query}@flux.shubh.sh`;
+  const fullEmail = `${query}@${domain}`;
   const selectedEmail = selectedIdx !== null ? emails[selectedIdx] : null;
 
   if (loading) {
@@ -75,13 +77,20 @@ function SearchResultsContent() {
     <div className="flex flex-col h-screen">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-border flex-shrink-0">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link
+          href="/"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
           <Mail className="w-5 h-5 text-accent" />
-          <span className="font-semibold text-sm hidden sm:inline">Flux Mail</span>
+          <span className="font-semibold text-sm hidden sm:inline">
+            Flux Mail
+          </span>
         </Link>
 
         <div className="flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-md bg-bg-subtle text-sm">
-          <span className="text-fg-muted truncate max-w-[200px] sm:max-w-none">{fullEmail}</span>
+          <span className="text-fg-muted truncate max-w-[200px] sm:max-w-none">
+            {fullEmail}
+          </span>
           <button
             onClick={handleCopy}
             className="p-1 rounded hover:bg-bg-hover transition-colors"
@@ -98,7 +107,9 @@ function SearchResultsContent() {
             className="p-2 rounded-lg hover:bg-bg-hover transition-colors"
             title="Refresh"
           >
-            <RefreshCw className={`w-4 h-4 text-fg-muted ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 text-fg-muted ${refreshing ? "animate-spin" : ""}`}
+            />
           </button>
           <ThemeToggle />
         </div>
@@ -117,7 +128,8 @@ function SearchResultsContent() {
               <Inbox className="w-10 h-10 mb-3 opacity-40" />
               <p className="text-sm">No emails yet</p>
               <p className="text-xs mt-1">
-                Send an email to <span className="text-fg font-medium">{fullEmail}</span>
+                Send an email to{" "}
+                <span className="text-fg font-medium">{fullEmail}</span>
               </p>
             </div>
           ) : (
