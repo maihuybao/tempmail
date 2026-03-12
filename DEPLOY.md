@@ -54,8 +54,8 @@ sudo -u postgres psql
 ```
 
 ```sql
-CREATE USER fluxmail WITH PASSWORD 'mat_khau_manh_cua_ban';
-CREATE DATABASE flux_mail OWNER fluxmail;
+CREATE USER fluxmail WITH PASSWORD 'fluxmail';
+CREATE DATABASE fluxmail OWNER fluxmail;
 \q
 ```
 

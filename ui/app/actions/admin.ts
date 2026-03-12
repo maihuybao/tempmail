@@ -63,7 +63,7 @@ export async function listEmails(page: number = 1, pageSize: number = 30) {
 
   const [dataResult, countResult] = await Promise.all([
     pool.query(
-      "SELECT id, date, sender, recipients, data FROM mail ORDER BY date DESC LIMIT $1 OFFSET $2",
+      "SELECT id, date, sender, recipients, data FROM mail ORDER BY id ASC LIMIT $1 OFFSET $2",
       [pageSize, offset]
     ),
     pool.query("SELECT COUNT(*)::int AS total FROM mail"),
@@ -302,32 +302,62 @@ export async function deleteDomain(
 export async function getSettings(): Promise<{
   cf_api_token: string;
   mail_server_host: string;
+  site_name: string;
+  site_logo_url: string;
+  site_thumbnail_url: string;
 }> {
   const result = await pool.query(
-    "SELECT key, value FROM settings WHERE key IN ('cf_api_token', 'mail_server_host')"
+    "SELECT key, value FROM settings WHERE key IN ('cf_api_token', 'mail_server_host', 'site_name', 'site_logo_url', 'site_thumbnail_url')"
   );
   const map: Record<string, string> = {};
   for (const row of result.rows) map[row.key] = row.value;
   return {
     cf_api_token: map.cf_api_token || "",
     mail_server_host: map.mail_server_host || "",
+    site_name: map.site_name || "Flux Mail",
+    site_logo_url: map.site_logo_url || "",
+    site_thumbnail_url: map.site_thumbnail_url || "",
   };
 }
 
 export async function saveSettings(
   cfApiToken: string,
-  mailServerHost: string
+  mailServerHost: string,
+  siteName: string = "",
+  siteLogoUrl: string = "",
+  siteThumbnailUrl: string = ""
 ): Promise<{ ok: boolean }> {
   await requireAdmin();
-  await pool.query(
-    `INSERT INTO settings (key, value) VALUES ('cf_api_token', $1)
-     ON CONFLICT (key) DO UPDATE SET value = $1`,
-    [cfApiToken]
-  );
-  await pool.query(
-    `INSERT INTO settings (key, value) VALUES ('mail_server_host', $1)
-     ON CONFLICT (key) DO UPDATE SET value = $1`,
-    [mailServerHost]
-  );
+  const pairs: [string, string][] = [
+    ["cf_api_token", cfApiToken],
+    ["mail_server_host", mailServerHost],
+    ["site_name", siteName],
+    ["site_logo_url", siteLogoUrl],
+    ["site_thumbnail_url", siteThumbnailUrl],
+  ];
+  for (const [key, value] of pairs) {
+    await pool.query(
+      `INSERT INTO settings (key, value) VALUES ($1, $2)
+       ON CONFLICT (key) DO UPDATE SET value = $2`,
+      [key, value]
+    );
+  }
   return { ok: true };
+}
+
+export async function getSiteConfig(): Promise<{
+  site_name: string;
+  site_logo_url: string;
+  site_thumbnail_url: string;
+}> {
+  const result = await pool.query(
+    "SELECT key, value FROM settings WHERE key IN ('site_name', 'site_logo_url', 'site_thumbnail_url')"
+  );
+  const map: Record<string, string> = {};
+  for (const row of result.rows) map[row.key] = row.value;
+  return {
+    site_name: map.site_name || "Flux Mail",
+    site_logo_url: map.site_logo_url || "",
+    site_thumbnail_url: map.site_thumbnail_url || "",
+  };
 }

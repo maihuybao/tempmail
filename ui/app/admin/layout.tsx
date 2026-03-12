@@ -1,10 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Mail, Inbox, PenSquare, LayoutTemplate, Globe, Settings, LogOut } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { adminLogout } from "@/app/actions/admin";
+import { adminLogout, getSiteConfig } from "@/app/actions/admin";
 
 export default function AdminLayout({
   children,
@@ -12,6 +13,11 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [siteName, setSiteName] = useState("Flux Mail");
+
+  useEffect(() => {
+    getSiteConfig().then((c) => setSiteName(c.site_name));
+  }, []);
 
   if (pathname === "/admin/login") {
     return <>{children}</>;
@@ -31,7 +37,7 @@ export default function AdminLayout({
         <div className="px-4 py-4 border-b border-border">
           <Link href="/admin" className="flex items-center gap-2">
             <Mail className="w-5 h-5 text-accent" />
-            <span className="font-semibold text-sm">Flux Mail</span>
+            <span className="font-semibold text-sm">{siteName}</span>
             <span className="text-xs text-fg-muted bg-bg-hover px-1.5 py-0.5 rounded">Admin</span>
           </Link>
         </div>

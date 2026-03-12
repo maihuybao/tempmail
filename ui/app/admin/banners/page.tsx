@@ -8,6 +8,7 @@ import {
   Banner,
 } from "@/app/actions/admin";
 import { Trash2, Pencil, Plus, X, Eye, EyeOff } from "lucide-react";
+import { inputClass } from "@/lib/ui";
 
 const POSITIONS = [
   { value: "home_top", label: "Home - Top" },
@@ -73,9 +74,6 @@ export default function AdminBannersPage() {
   };
 
   const posLabel = (v: string) => POSITIONS.find((p) => p.value === v)?.label ?? v;
-
-  const inputClass =
-    "w-full px-3 py-2 rounded-lg border border-border bg-bg text-fg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors";
 
   return (
     <div className="p-6 space-y-6">

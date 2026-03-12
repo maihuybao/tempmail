@@ -7,8 +7,9 @@ export async function searchEmails(recipientQuery: string) {
   try {
     const result = await pool.query(
       `SELECT date, sender, recipients, data 
-       FROM mail 
-       WHERE recipients = $1`,
+       FROM mail
+       WHERE recipients = $1
+       ORDER BY id ASC`,
       [`<${recipientQuery}>`]
     );
     const output = [];

@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 import BannerSlot from "@/components/BannerSlot";
 import { Mail, ChevronDown } from "lucide-react";
-import { getActiveDomains } from "@/app/actions/admin";
+import { getActiveDomains, getSiteConfig } from "@/app/actions/admin";
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [domains, setDomains] = useState<string[]>([]);
   const [domain, setDomain] = useState("");
   const [open, setOpen] = useState(false);
+  const [siteName, setSiteName] = useState("Flux Mail");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -20,6 +21,7 @@ export default function Home() {
       setDomains(d);
       setDomain(d[0]);
     });
+    getSiteConfig().then((c) => setSiteName(c.site_name));
   }, []);
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export default function Home() {
         <div className="w-full max-w-md space-y-8 text-center">
         <div className="flex items-center justify-center gap-2">
           <Mail className="w-8 h-8 text-accent" />
-          <h1 className="text-3xl font-semibold tracking-tight">Flux Mail</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{siteName}</h1>
           <div className="ml-auto">
             <ThemeToggle />
           </div>

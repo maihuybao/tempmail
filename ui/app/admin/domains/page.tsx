@@ -9,6 +9,7 @@ import {
   Domain,
 } from "@/app/actions/admin";
 import { Trash2, Plus, X, Globe, ToggleLeft, ToggleRight } from "lucide-react";
+import { inputClass } from "@/lib/ui";
 
 export default function AdminDomainsPage() {
   const [domains, setDomains] = useState<Domain[]>([]);
@@ -68,9 +69,6 @@ export default function AdminDomainsPage() {
     }
     fetchDomains();
   };
-
-  const inputClass =
-    "w-full px-3 py-2 rounded-lg border border-border bg-bg text-fg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors";
 
   return (
     <div className="p-6 space-y-6">

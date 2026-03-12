@@ -3,10 +3,14 @@
 import { useEffect, useState } from "react";
 import { getSettings, saveSettings } from "@/app/actions/admin";
 import { Save } from "lucide-react";
+import { inputClass } from "@/lib/ui";
 
 export default function AdminSettingsPage() {
   const [cfToken, setCfToken] = useState("");
   const [mailHost, setMailHost] = useState("");
+  const [siteName, setSiteName] = useState("");
+  const [siteLogoUrl, setSiteLogoUrl] = useState("");
+  const [siteThumbnailUrl, setSiteThumbnailUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -15,6 +19,9 @@ export default function AdminSettingsPage() {
     getSettings().then((s) => {
       setCfToken(s.cf_api_token);
       setMailHost(s.mail_server_host);
+      setSiteName(s.site_name);
+      setSiteLogoUrl(s.site_logo_url);
+      setSiteThumbnailUrl(s.site_thumbnail_url);
       setLoading(false);
     });
   }, []);
@@ -22,14 +29,11 @@ export default function AdminSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     setMsg("");
-    await saveSettings(cfToken, mailHost);
+    await saveSettings(cfToken, mailHost, siteName, siteLogoUrl, siteThumbnailUrl);
     setSaving(false);
     setMsg("Saved");
     setTimeout(() => setMsg(""), 2000);
   };
-
-  const inputClass =
-    "w-full px-3 py-2 rounded-lg border border-border bg-bg text-fg text-sm focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors";
 
   if (loading) {
     return <div className="p-6 text-sm text-fg-muted">Loading...</div>;
@@ -65,6 +69,48 @@ export default function AdminSettingsPage() {
           />
           <p className="text-xs text-fg-muted mt-1">
             IP or hostname of your SMTP server (used for MX records)
+          </p>
+        </div>
+
+        <hr className="border-border" />
+
+        <div>
+          <label className="block text-xs text-fg-muted mb-1">
+            Site Name
+          </label>
+          <input
+            type="text"
+            value={siteName}
+            onChange={(e) => setSiteName(e.target.value)}
+            placeholder="Flux Mail"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-fg-muted mb-1">
+            Logo URL
+          </label>
+          <input
+            type="text"
+            value={siteLogoUrl}
+            onChange={(e) => setSiteLogoUrl(e.target.value)}
+            placeholder="https://example.com/logo.png"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-fg-muted mb-1">
+            Thumbnail URL
+          </label>
+          <input
+            type="text"
+            value={siteThumbnailUrl}
+            onChange={(e) => setSiteThumbnailUrl(e.target.value)}
+            placeholder="https://example.com/og-image.png"
+            className={inputClass}
+          />
+          <p className="text-xs text-fg-muted mt-1">
+            Used as Open Graph image for social sharing
           </p>
         </div>
 

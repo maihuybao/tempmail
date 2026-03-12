@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { insertEmail } from "@/app/actions/admin";
 import { useRouter } from "next/navigation";
+import { inputClass } from "@/lib/ui";
 
 export default function AdminComposePage() {
   const [sender, setSender] = useState("");
@@ -23,9 +24,6 @@ export default function AdminComposePage() {
       setStatus("error");
     }
   };
-
-  const inputClass =
-    "w-full px-4 py-2.5 rounded-lg border border-border bg-bg text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent text-sm transition-colors";
 
   return (
     <div className="p-6 max-w-2xl">
