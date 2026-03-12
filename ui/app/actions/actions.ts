@@ -9,7 +9,7 @@ export async function searchEmails(recipientQuery: string) {
       `SELECT id, date, sender, recipients, data
        FROM mail
        WHERE recipients = $1
-       ORDER BY id ASC`,
+       ORDER BY id DESC`,
       [`<${recipientQuery}>`]
     );
     const output = [];
