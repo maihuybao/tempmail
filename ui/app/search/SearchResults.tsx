@@ -15,7 +15,6 @@ import {
   RefreshCw,
   Mail,
   Inbox,
-  Trash2,
   ChevronLeft,
   ChevronRight,
   MoreVertical,
@@ -134,10 +133,6 @@ function SearchResultsContent() {
             <button className="p-1.5 rounded hover:bg-bg-hover transition-colors" title="More">
               <MoreVertical className="w-4 h-4" />
             </button>
-            <button className="p-1.5 rounded hover:bg-bg-hover transition-colors" title="Delete all">
-              <Trash2 className="w-4 h-4" />
-            </button>
-
             <div className="flex items-center gap-1 ml-auto">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
