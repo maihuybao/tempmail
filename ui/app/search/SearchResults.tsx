@@ -5,7 +5,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import EmailRow from "@/components/EmailRow";
 import EmailDetail from "@/components/EmailDetail";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { searchEmails } from "@/app/actions/actions";
+import { searchEmails, deleteUserEmail } from "@/app/actions/actions";
 import { getActiveDomains } from "@/app/actions/admin";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SemiParserEmail } from "@/hooks/parseEmail";
@@ -18,10 +18,12 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreVertical,
+  Trash2,
 } from "lucide-react";
 import BannerSlot from "@/components/BannerSlot";
 
 export interface Email {
+  id: number;
   date: string;
   sender: string;
   recipients: string;
@@ -78,6 +80,12 @@ function SearchResultsContent() {
     navigator.clipboard.writeText(`${query}@${domain}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDelete = async (email: Email) => {
+    await deleteUserEmail(email.id, email.recipients);
+    setSelectedIdx(null);
+    fetchEmails();
   };
 
   const fullEmail = `${query}@${domain}`;
@@ -197,6 +205,7 @@ function SearchResultsContent() {
             <EmailDetail
               email={selectedEmail}
               onBack={() => setSelectedIdx(null)}
+              onDelete={() => handleDelete(selectedEmail)}
             />
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-fg-muted">
