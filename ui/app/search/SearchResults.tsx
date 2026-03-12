@@ -18,7 +18,6 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreVertical,
-  Trash2,
 } from "lucide-react";
 import BannerSlot from "@/components/BannerSlot";
 

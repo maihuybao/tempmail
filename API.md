@@ -6,8 +6,8 @@ Lấy danh sách email của một địa chỉ.
 
 ### Query Parameters
 
-| Param | Type   | Required | Mô tả                          |
-|-------|--------|----------|---------------------------------|
+| Param | Type   | Required | Mô tả                                 |
+| ----- | ------ | -------- | ------------------------------------- |
 | email | string | Yes      | Địa chỉ email (vd: `user@domain.com`) |
 
 ### Response
@@ -44,7 +44,7 @@ Lấy danh sách email của một địa chỉ.
 ### Ví dụ
 
 ```bash
-curl "https://your-domain.com/api/inbox?email=test@flux.shubh.sh"
+curl "https://{{domain}}/api/inbox?email=test@flux.shubh.sh"
 ```
 
 ---
@@ -67,7 +67,7 @@ Lấy danh sách domain đang hoạt động.
 ### Ví dụ
 
 ```bash
-curl "https://your-domain.com/api/domains"
+curl "https://{{domain}}/api/domains"
 ```
 
 ---
@@ -103,7 +103,7 @@ Không có domain nào đang hoạt động:
 ### Ví dụ
 
 ```bash
-curl "https://your-domain.com/api/generate"
+curl "https://{{domain}}/api/generate"
 ```
 
 ---
