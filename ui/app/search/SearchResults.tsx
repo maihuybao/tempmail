@@ -21,6 +21,8 @@ function SearchResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const query = searchParams.get("q") || "";
+  const domains = (process.env.NEXT_PUBLIC_EMAIL_DOMAINS || "foxycrown.net").split(",");
+  const domain = searchParams.get("d") || domains[0];
 
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,8 +33,6 @@ function SearchResultsContent() {
   useEffect(() => {
     if (!query) router.push("/");
   }, [query, router]);
-
-  const domain = process.env.NEXT_PUBLIC_EMAIL_DOMAIN || "mail.foxycrown.net";
 
   const fetchEmails = useCallback(async () => {
     if (!query) return;

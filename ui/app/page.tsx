@@ -1,19 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
-import { Mail } from "lucide-react";
+import { Mail, ChevronDown } from "lucide-react";
+
+const domains = (process.env.NEXT_PUBLIC_EMAIL_DOMAINS || "foxycrown.net").split(",");
 
 export default function Home() {
   const [input, setInput] = useState("");
+  const [domain, setDomain] = useState(domains[0]);
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSearch = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
     const username = trimmed.includes("@") ? trimmed.split("@")[0] : trimmed;
-    router.push(`/search?q=${encodeURIComponent(username.toLowerCase())}`);
+    router.push(
+      `/search?q=${encodeURIComponent(username.toLowerCase())}&d=${encodeURIComponent(domain)}`
+    );
   };
 
   return (
@@ -32,14 +49,41 @@ export default function Home() {
         </p>
 
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="username or user@domain..."
-            className="flex-1 px-4 py-2.5 rounded-lg border border-border bg-bg text-fg placeholder:text-fg-muted focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-colors text-sm"
-          />
+          <div className="flex flex-1 rounded-lg border border-border bg-bg focus-within:ring-2 focus-within:ring-accent/50 focus-within:border-accent transition-colors">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder="username"
+              className="flex-1 min-w-0 px-4 py-2.5 bg-transparent text-fg placeholder:text-fg-muted focus:outline-none text-sm"
+            />
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="flex items-center gap-1 h-full px-3 border-l border-border text-fg-muted hover:text-fg text-sm transition-colors"
+              >
+                <span className="hidden sm:inline">@</span>{domain}
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+              {open && (
+                <div className="absolute right-0 top-full mt-1 min-w-full w-max bg-bg border border-border rounded-lg shadow-lg z-10 py-1">
+                  {domains.map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => { setDomain(d); setOpen(false); }}
+                      className={`block w-full text-left px-4 py-2 text-sm hover:bg-bg-hover transition-colors ${
+                        d === domain ? "text-accent font-medium" : "text-fg"
+                      }`}
+                    >
+                      @{d}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
           <button
             onClick={handleSearch}
             className="px-5 py-2.5 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors text-sm"
