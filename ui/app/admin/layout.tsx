@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Mail, Inbox, PenSquare, LayoutTemplate, LogOut } from "lucide-react";
+import { Mail, Inbox, PenSquare, LayoutTemplate, Globe, Settings, LogOut } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { adminLogout } from "@/app/actions/admin";
 
@@ -20,7 +20,9 @@ export default function AdminLayout({
   const nav = [
     { href: "/admin/emails", label: "Emails", icon: Inbox },
     { href: "/admin/banners", label: "Banners", icon: LayoutTemplate },
+    { href: "/admin/domains", label: "Domains", icon: Globe },
     { href: "/admin/compose", label: "Compose", icon: PenSquare },
+    { href: "/admin/settings", label: "Settings", icon: Settings },
   ];
 
   return (

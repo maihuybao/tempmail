@@ -7,6 +7,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 
+import { setupDomainDNS, removeDomainDNS } from "@/lib/cloudflare";
+
 const COOKIE_NAME = "admin_token";
 
 // --- Auth ---
@@ -198,5 +200,134 @@ export async function upsertBanner(
 export async function deleteBanner(id: number) {
   await requireAdmin();
   await pool.query("DELETE FROM banners WHERE id = $1", [id]);
+  return { ok: true };
+}
+
+// --- Domains ---
+
+export interface Domain {
+  id: number;
+  domain: string;
+  cf_zone_id: string | null;
+  enabled: boolean;
+  created_at: string;
+}
+
+export async function listDomains(): Promise<Domain[]> {
+  await requireAdmin();
+  const result = await pool.query(
+    "SELECT id, domain, cf_zone_id, enabled, created_at FROM domains ORDER BY id"
+  );
+  return result.rows;
+}
+
+export async function getActiveDomains(): Promise<string[]> {
+  const result = await pool.query(
+    "SELECT domain FROM domains WHERE enabled = true ORDER BY id"
+  );
+  const domains = result.rows.map((r: { domain: string }) => r.domain);
+  return domains.length > 0 ? domains : ["foxycrown.net"];
+}
+
+export async function addDomain(
+  domain: string,
+  cfZoneId: string
+): Promise<{ ok: boolean; error?: string; dnsErrors?: string[] }> {
+  await requireAdmin();
+
+  await pool.query(
+    "INSERT INTO domains (domain, cf_zone_id) VALUES ($1, $2)",
+    [domain.toLowerCase().trim(), cfZoneId.trim() || null]
+  );
+
+  if (cfZoneId.trim()) {
+    const settings = await getSettings();
+    if (settings.cf_api_token && settings.mail_server_host) {
+      const dns = await setupDomainDNS(
+        settings.cf_api_token,
+        cfZoneId.trim(),
+        domain.toLowerCase().trim(),
+        settings.mail_server_host
+      );
+      if (!dns.ok) return { ok: true, dnsErrors: dns.errors };
+    }
+  }
+
+  return { ok: true };
+}
+
+export async function updateDomain(
+  id: number,
+  enabled: boolean
+): Promise<{ ok: boolean }> {
+  await requireAdmin();
+  await pool.query("UPDATE domains SET enabled = $1 WHERE id = $2", [enabled, id]);
+  return { ok: true };
+}
+
+export async function deleteDomain(
+  id: number,
+  removeDNS: boolean = false
+): Promise<{ ok: boolean; dnsErrors?: string[] }> {
+  await requireAdmin();
+
+  if (removeDNS) {
+    const result = await pool.query(
+      "SELECT domain, cf_zone_id FROM domains WHERE id = $1",
+      [id]
+    );
+    const row = result.rows[0];
+    if (row?.cf_zone_id) {
+      const settings = await getSettings();
+      if (settings.cf_api_token) {
+        const dns = await removeDomainDNS(
+          settings.cf_api_token,
+          row.cf_zone_id,
+          row.domain
+        );
+        if (!dns.ok) {
+          await pool.query("DELETE FROM domains WHERE id = $1", [id]);
+          return { ok: true, dnsErrors: dns.errors };
+        }
+      }
+    }
+  }
+
+  await pool.query("DELETE FROM domains WHERE id = $1", [id]);
+  return { ok: true };
+}
+
+// --- Settings ---
+
+export async function getSettings(): Promise<{
+  cf_api_token: string;
+  mail_server_host: string;
+}> {
+  const result = await pool.query(
+    "SELECT key, value FROM settings WHERE key IN ('cf_api_token', 'mail_server_host')"
+  );
+  const map: Record<string, string> = {};
+  for (const row of result.rows) map[row.key] = row.value;
+  return {
+    cf_api_token: map.cf_api_token || "",
+    mail_server_host: map.mail_server_host || "",
+  };
+}
+
+export async function saveSettings(
+  cfApiToken: string,
+  mailServerHost: string
+): Promise<{ ok: boolean }> {
+  await requireAdmin();
+  await pool.query(
+    `INSERT INTO settings (key, value) VALUES ('cf_api_token', $1)
+     ON CONFLICT (key) DO UPDATE SET value = $1`,
+    [cfApiToken]
+  );
+  await pool.query(
+    `INSERT INTO settings (key, value) VALUES ('mail_server_host', $1)
+     ON CONFLICT (key) DO UPDATE SET value = $1`,
+    [mailServerHost]
+  );
   return { ok: true };
 }

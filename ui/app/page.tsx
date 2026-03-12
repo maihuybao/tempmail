@@ -5,15 +5,22 @@ import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 import BannerSlot from "@/components/BannerSlot";
 import { Mail, ChevronDown } from "lucide-react";
-
-const domains = (process.env.NEXT_PUBLIC_EMAIL_DOMAINS || "foxycrown.net").split(",");
+import { getActiveDomains } from "@/app/actions/admin";
 
 export default function Home() {
   const [input, setInput] = useState("");
-  const [domain, setDomain] = useState(domains[0]);
+  const [domains, setDomains] = useState<string[]>([]);
+  const [domain, setDomain] = useState("");
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    getActiveDomains().then((d) => {
+      setDomains(d);
+      setDomain(d[0]);
+    });
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -27,8 +34,9 @@ export default function Home() {
 
   const handleSearch = () => {
     const trimmed = input.trim();
-    if (!trimmed) return;
-    const username = trimmed.includes("@") ? trimmed.split("@")[0] : trimmed;
+    const username = trimmed
+      ? trimmed.includes("@") ? trimmed.split("@")[0] : trimmed
+      : Math.random().toString(36).slice(2, 10);
     router.push(
       `/search?q=${encodeURIComponent(username.toLowerCase())}&d=${encodeURIComponent(domain)}`
     );
@@ -58,7 +66,7 @@ export default function Home() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="username"
+              placeholder="username (leave empty for random)"
               className="flex-1 min-w-0 px-4 py-2.5 bg-transparent text-fg placeholder:text-fg-muted focus:outline-none text-sm"
             />
             <div className="relative" ref={dropdownRef}>

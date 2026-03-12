@@ -33,5 +33,22 @@ export async function runMigrations() {
     )
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS domains (
+      id         BIGSERIAL PRIMARY KEY,
+      domain     TEXT NOT NULL UNIQUE,
+      cf_zone_id TEXT,
+      enabled    BOOLEAN NOT NULL DEFAULT true,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+
   console.log("Migrations complete");
 }
