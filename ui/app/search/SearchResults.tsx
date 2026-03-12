@@ -85,18 +85,11 @@ function SearchResultsContent() {
   const totalPages = Math.max(1, Math.ceil(emails.length / PAGE_SIZE));
   const pagedEmails = emails.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const selectedEmail = selectedIdx !== null ? emails[selectedIdx] : null;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-fg-muted text-sm">
         Loading...
-      </div>
-    );
-  }
-
-  if (selectedEmail) {
-    return (
-      <div className="flex flex-col h-screen">
-        <EmailDetail email={selectedEmail} onBack={() => setSelectedIdx(null)} />
       </div>
     );
   }
@@ -127,67 +120,96 @@ function SearchResultsContent() {
           <ThemeToggle />
         </div>
       </header>
-      {/* Toolbar — delete | pagination | count + refresh */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-border flex-shrink-0 text-fg-muted">
-        <button className="p-1.5 rounded hover:bg-bg-hover transition-colors" title="More">
-          <MoreVertical className="w-4 h-4" />
-        </button>
-        <button className="p-1.5 rounded hover:bg-bg-hover transition-colors" title="Delete all">
-          <Trash2 className="w-4 h-4" />
-        </button>
 
-        <div className="flex items-center gap-1 ml-4">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page <= 1}
-            className="p-1 rounded hover:bg-bg-hover transition-colors disabled:opacity-30"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <span className="text-xs px-2">page {page}</span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages}
-            className="p-1 rounded hover:bg-bg-hover transition-colors disabled:opacity-30"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+      {/* Two-panel body */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left panel — toolbar + email list */}
+        <div
+          className={`w-full md:w-80 md:min-w-[320px] border-r border-border flex flex-col flex-shrink-0 ${
+            selectedEmail ? "hidden md:flex" : "flex"
+          }`}
+        >
+          {/* Toolbar */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border flex-shrink-0 text-fg-muted">
+            <button className="p-1.5 rounded hover:bg-bg-hover transition-colors" title="More">
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            <button className="p-1.5 rounded hover:bg-bg-hover transition-colors" title="Delete all">
+              <Trash2 className="w-4 h-4" />
+            </button>
 
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs">{emails.length} mails</span>
-          <button
-            onClick={handleRefresh}
-            className="p-1.5 rounded hover:bg-bg-hover transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-      </div>
-      {/* Email list */}
-      <div className="flex-1 overflow-y-auto">
-        {emails.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-fg-muted p-8 text-center">
-            <Inbox className="w-10 h-10 mb-3 opacity-40" />
-            <p className="text-sm">No emails yet.</p>
-            <p className="text-xs mt-1">
-              Send to <span className="text-fg font-medium">{fullEmail}</span>
-            </p>
+            <div className="flex items-center gap-1 ml-auto">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="p-1 rounded hover:bg-bg-hover transition-colors disabled:opacity-30"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs px-1">page {page}</span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="p-1 rounded hover:bg-bg-hover transition-colors disabled:opacity-30"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <span className="text-xs ml-2">{emails.length} mails</span>
+            <button
+              onClick={handleRefresh}
+              className="p-1.5 rounded hover:bg-bg-hover transition-colors"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
           </div>
-        ) : (
-          pagedEmails.map((email, idx) => {
-            const realIdx = (page - 1) * PAGE_SIZE + idx;
-            return (
-              <EmailRow
-                key={realIdx}
-                email={email}
-                selected={selectedIdx === realIdx}
-                onClick={() => setSelectedIdx(realIdx)}
-              />
-            );
-          })
-        )}
+
+          {/* Email list */}
+          <div className="flex-1 overflow-y-auto">
+            {emails.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-fg-muted p-8 text-center">
+                <Inbox className="w-10 h-10 mb-3 opacity-40" />
+                <p className="text-sm">No emails yet.</p>
+                <p className="text-xs mt-1">
+                  Send to <span className="text-fg font-medium">{fullEmail}</span>
+                </p>
+              </div>
+            ) : (
+              pagedEmails.map((email, idx) => {
+                const realIdx = (page - 1) * PAGE_SIZE + idx;
+                return (
+                  <EmailRow
+                    key={realIdx}
+                    email={email}
+                    selected={selectedIdx === realIdx}
+                    onClick={() => setSelectedIdx(realIdx)}
+                  />
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Right panel — email detail */}
+        <div
+          className={`flex-1 overflow-hidden ${
+            selectedEmail ? "block" : "hidden md:block"
+          }`}
+        >
+          {selectedEmail ? (
+            <EmailDetail
+              email={selectedEmail}
+              onBack={() => setSelectedIdx(null)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-fg-muted">
+              <Mail className="w-10 h-10 mb-3 opacity-40" />
+              <p className="text-sm">Select an email to read</p>
+            </div>
+          )}
+        </div>
       </div>
       <BannerSlot position="inbox_bottom" />
     </div>
