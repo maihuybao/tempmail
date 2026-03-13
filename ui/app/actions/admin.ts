@@ -170,31 +170,6 @@ export async function deleteEmails(ids: number[]) {
   return { ok: true };
 }
 
-export async function insertEmail(
-  sender: string,
-  recipient: string,
-  subject: string,
-  body: string
-) {
-  await requireAdmin();
-  const now = new Date().toUTCString();
-  const mime = [
-    `From: ${sender}`,
-    `To: ${recipient}`,
-    `Subject: ${subject}`,
-    `Date: ${now}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: text/plain; charset=UTF-8`,
-    "",
-    body,
-  ].join("\r\n");
-
-  await pool.query(
-    "INSERT INTO mail (date, sender, recipients, data) VALUES ($1, $2, $3, $4)",
-    [now, `<${sender}>`, `<${recipient}>`, mime]
-  );
-  return { ok: true };
-}
 
 // --- Banners ---
 
@@ -206,7 +181,11 @@ export interface Banner {
   sort_order: number;
 }
 
-const VALID_POSITIONS = ["home_top", "home_bottom", "inbox_top", "inbox_bottom"];
+const VALID_POSITIONS = [
+  "home_top", "home_bottom",
+  "inbox_top", "inbox_bottom", "inbox_left", "inbox_right",
+  "reading_top", "reading_bottom",
+];
 
 export async function getBannersByPosition(position: string): Promise<Banner[]> {
   const result = await pool.query(
@@ -262,20 +241,21 @@ export interface Domain {
   domain: string;
   cf_zone_id: string | null;
   enabled: boolean;
+  sort_order: number;
   created_at: string;
 }
 
 export async function listDomains(): Promise<Domain[]> {
   await requireAdmin();
   const result = await pool.query(
-    "SELECT id, domain, cf_zone_id, enabled, created_at FROM domains ORDER BY id"
+    "SELECT id, domain, cf_zone_id, enabled, COALESCE(sort_order, id) as sort_order, created_at FROM domains ORDER BY COALESCE(sort_order, id)"
   );
   return result.rows;
 }
 
 export async function getActiveDomains(): Promise<string[]> {
   const result = await pool.query(
-    "SELECT domain FROM domains WHERE enabled = true ORDER BY id"
+    "SELECT domain FROM domains WHERE enabled = true ORDER BY COALESCE(sort_order, id)"
   );
   const domains = result.rows.map((r: { domain: string }) => r.domain);
   return domains.length > 0 ? domains : ["foxycrown.net"];
@@ -321,6 +301,16 @@ export async function updateDomain(
 ): Promise<{ ok: boolean }> {
   await requireAdmin();
   await pool.query("UPDATE domains SET enabled = $1 WHERE id = $2", [enabled, id]);
+  return { ok: true };
+}
+
+export async function reorderDomains(
+  orderedIds: number[]
+): Promise<{ ok: boolean }> {
+  await requireAdmin();
+  for (let i = 0; i < orderedIds.length; i++) {
+    await pool.query("UPDATE domains SET sort_order = $1 WHERE id = $2", [i, orderedIds[i]]);
+  }
   return { ok: true };
 }
 

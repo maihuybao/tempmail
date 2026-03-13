@@ -16,6 +16,10 @@ const POSITIONS = [
   { value: "home_bottom", label: "Home - Bottom" },
   { value: "inbox_top", label: "Inbox - Top" },
   { value: "inbox_bottom", label: "Inbox - Bottom" },
+  { value: "inbox_left", label: "Inbox - Left sidebar" },
+  { value: "inbox_right", label: "Inbox - Right sidebar" },
+  { value: "reading_top", label: "Reading - Top" },
+  { value: "reading_bottom", label: "Reading - Bottom" },
 ];
 
 interface FormState {

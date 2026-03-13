@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Email } from "@/app/search/SearchResults";
 import { ArrowLeft, Trash2 } from "lucide-react";
+import BannerSlot from "@/components/BannerSlot";
 
 interface EmailDetailProps {
   email: Email;
@@ -58,6 +59,7 @@ export default function EmailDetail({ email, onBack, onDelete }: EmailDetailProp
       )}
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <BannerSlot position="reading_top" />
         <h1 className="text-xl font-semibold mb-4">{email.data.subject || "(No Subject)"}</h1>
         <div className="space-y-1 text-sm mb-6">
           <div className="flex gap-2"><span className="text-fg-muted w-12">From</span><span>{email.data.from}</span></div>
@@ -74,6 +76,7 @@ export default function EmailDetail({ email, onBack, onDelete }: EmailDetailProp
             <pre className="text-sm whitespace-pre-wrap">{email.data.text}</pre>
           )}
         </div>
+        <BannerSlot position="reading_bottom" />
       </div>
     </div>
   );

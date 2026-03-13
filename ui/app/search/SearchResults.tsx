@@ -127,8 +127,13 @@ function SearchResultsContent() {
         </div>
       </header>
 
-      {/* Two-panel body */}
+      {/* Two-panel body with optional sidebars */}
       <div className="flex flex-1 overflow-hidden">
+        {/* Left sidebar banner — desktop only */}
+        <div className="hidden lg:block w-[160px] flex-shrink-0 overflow-y-auto border-r border-border">
+          <BannerSlot position="inbox_left" />
+        </div>
+
         {/* Left panel — toolbar + email list */}
         <div
           className={`w-full md:w-80 md:min-w-[320px] border-r border-border flex flex-col flex-shrink-0 ${
@@ -212,6 +217,11 @@ function SearchResultsContent() {
               <p className="text-sm">Select an email to read</p>
             </div>
           )}
+        </div>
+
+        {/* Right sidebar banner — desktop only */}
+        <div className="hidden lg:block w-[160px] flex-shrink-0 overflow-y-auto border-l border-border">
+          <BannerSlot position="inbox_right" />
         </div>
       </div>
       <BannerSlot position="inbox_bottom" />

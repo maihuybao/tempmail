@@ -39,6 +39,7 @@ export async function runMigrations() {
       domain     TEXT NOT NULL UNIQUE,
       cf_zone_id TEXT,
       enabled    BOOLEAN NOT NULL DEFAULT true,
+      sort_order INT NOT NULL DEFAULT 0,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
@@ -48,6 +49,11 @@ export async function runMigrations() {
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
     )
+  `);
+
+  // Add sort_order to domains if missing (existing DBs)
+  await pool.query(`
+    ALTER TABLE domains ADD COLUMN IF NOT EXISTS sort_order INT NOT NULL DEFAULT 0
   `);
 
   console.log("Migrations complete");
