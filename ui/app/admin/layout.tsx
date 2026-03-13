@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Mail, Inbox, LayoutTemplate, Globe, Settings, LogOut, Menu, X } from "lucide-react";
+import { Mail, Inbox, LayoutTemplate, Globe, Settings, LogOut, Menu, X, BarChart3 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { adminLogout, getSiteConfig } from "@/app/actions/admin";
 
@@ -18,6 +18,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (pathname === "/admin/login") return <>{children}</>;
 
   const nav = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
     { href: "/admin/emails", label: "Emails", icon: Inbox },
     { href: "/admin/banners", label: "Banners", icon: LayoutTemplate },
     { href: "/admin/domains", label: "Domains", icon: Globe },

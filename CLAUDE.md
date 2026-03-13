@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is this
 
-Self-hosted temporary email service. Rust SMTP server receives mail and stores it in Postgres. Next.js 15 frontend reads directly from the same Postgres database via server actions (no HTTP API between them). Emails auto-delete after 7 days. Domain: `flux.shubh.sh`.
+Self-hosted temporary email service. Rust SMTP server receives mail and stores it in Postgres. Next.js 15 frontend reads directly from the same Postgres database via server actions + REST API routes. Emails auto-delete after 7 days. Multi-domain support managed through an admin panel.
 
 ## Build & Run
 
@@ -26,9 +26,17 @@ pnpm build                     # production build
 pnpm lint                      # ESLint (next/core-web-vitals + next/typescript, flat config)
 ```
 
+### Create admin user
+```bash
+cd ui
+npx tsx scripts/create-admin.ts <username> <password>
+```
+
 ### Environment variables
-Rust backend needs: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `MAIL_DOMAIN` (see `.env.sample`)
-Next.js frontend needs: `DATABASE_URL` (Postgres connection string), `NEXT_PUBLIC_EMAIL_DOMAIN` (e.g. `flux.shubh.sh`) (see `ui/.env.example`)
+Rust backend: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `MAIL_DOMAIN`
+Next.js frontend: `DATABASE_URL` (Postgres connection string), `ADMIN_JWT_SECRET` (for admin auth, falls back to `"change-me-in-production"`)
+
+`NEXT_PUBLIC_EMAIL_DOMAIN` is deprecated — domains are now managed via the admin panel and stored in the `domains` DB table.
 
 ## CI
 
@@ -54,31 +62,58 @@ Initial → (EHLO/HELO) → Greeted → (MAIL FROM) → AwaitingRecipient
 → (body terminated by \r\n.\r\n) → DataReceived → saves to DB
 ```
 
-### Database schema (auto-created in `crates/database/src/database.rs`)
-- `mail` — `date TEXT, sender TEXT, recipients TEXT, data TEXT` (raw MIME in `data`)
+### Database schema
+
+Rust backend creates (in `crates/database/src/database.rs`):
+- `mail` — `id BIGSERIAL, date TEXT, sender TEXT, recipients TEXT, data TEXT` (raw MIME in `data`)
 - `quota` — per-address rate limiting (`address, quota_limit, completed`)
 - `user_config` — webhook config per mail address, FK to `quota.address`
 
-### Frontend data flow
-`ui/app/actions/actions.ts` queries Postgres directly via `pg` Pool (`ui/lib/db.ts`). The server action wraps the recipient in angle brackets (`<user@domain>`) to match how SMTP stores them — this is a common gotcha when debugging missing emails. Raw MIME from the `data` column is parsed using `mailparser` (`ui/hooks/parseEmail.ts`). No API routes exist — everything goes through Next.js server actions.
+Next.js creates on startup via `instrumentation.ts` → `lib/migrate.ts`:
+- `admin_users` — `id, username, password (bcrypt), created_at`
+- `banners` — `id, position, content (HTML), enabled, sort_order, created_at`
+- `domains` — `id, domain, cf_zone_id, enabled, sort_order, created_at`
+- `settings` — `key TEXT PK, value TEXT` (KV store for site config)
 
-### Frontend structure
-- `ui/app/page.tsx` — home page (client component): username input → navigates to `/search?q=<username>`
-- `ui/app/search/SearchResults.tsx` — main inbox UI (client component): two-panel email list + detail view
-- `ui/components/EmailDetail.tsx` — renders HTML email body via `dangerouslySetInnerHTML`, falls back to `<pre>` for plain text
-- `ui/contexts/ThemeContext.tsx` — `ThemeProvider` + `useTheme` hook, persists to localStorage, toggles `.dark` class on `<body>`
-- `ui/styles/globals.css` + `ui/tailwind.config.ts` — CSS custom properties for light/dark themes, Tailwind maps color tokens to CSS vars
+### Frontend data flow
+`ui/app/actions/actions.ts` queries Postgres directly via `pg` Pool (`ui/lib/db.ts`). The server action wraps the recipient in angle brackets (`<user@domain>`) to match how SMTP stores them — this is a common gotcha when debugging missing emails. Raw MIME from the `data` column is parsed using `mailparser` (`ui/hooks/parseEmail.ts`).
+
+### Domain configuration
+Domains are stored in the `domains` table and managed through `/admin/domains`. `getActiveDomains()` queries enabled domains ordered by `sort_order` and falls back to `"foxycrown.net"` if the table is empty. The SMTP backend still uses the `MAIL_DOMAIN` env var independently.
+
+When adding a domain via admin, if a Cloudflare API token and zone ID are configured (`ui/lib/cloudflare.ts`), MX and SPF DNS records are created automatically.
+
+### Admin panel (`/admin/*`)
+JWT-based auth (jose HS256, 24h expiry, `admin_token` cookie). Middleware in `ui/middleware.ts` protects all `/admin/*` routes except `/admin/login`.
+
+Pages:
+- `/admin/emails` — paginated email list, search, sort, bulk delete, edit
+- `/admin/domains` — add/enable/disable/reorder/delete domains, optional Cloudflare DNS automation
+- `/admin/banners` — CRUD for HTML banner slots (8 positions: `home_top`, `home_bottom`, `inbox_top`, `inbox_bottom`, `inbox_left`, `inbox_right`, `reading_top`, `reading_bottom`)
+- `/admin/settings` — Cloudflare API token, mail server hostname, site name, logo URL, thumbnail URL, random email length
+
+### REST API routes (documented in `API.md`)
+- `GET /api/inbox?email=user@domain.com` — fetch parsed emails for an address
+- `GET /api/domains` — list active domains
+- `GET /api/generate` — generate random email (respects `random_email_length` setting)
+
+### Frontend pages
+- `/` — home: username input + domain picker dropdown, navigates to `/search?q=<username>&d=<domain>`
+- `/search` — inbox UI (`SearchResults.tsx`): two-panel email list + detail view, pagination (20/page)
+- `/docs` — API documentation
+- `/contact` — contact page with Telegram handles
+
+### Site config
+`site_name`, `site_logo_url`, `site_thumbnail_url`, `random_email_length` are stored in the `settings` table. Root layout's `generateMetadata()` pulls these for dynamic OG/Twitter meta tags.
+
+### Banner system
+`ui/components/BannerSlot.tsx` renders HTML banners from DB at named positions. Banners can contain `<script>` tags (re-injected as live script elements). Used in `page.tsx` and `SearchResults.tsx`.
 
 ### Key constants
 - Max email size: 10 MB (`crates/smtp/src/lib.rs`)
 - Max recipients per message: 100
 - Connection timeout: 300s per SMTP session, 30s per read
 - Old mail cleanup: background thread in `main.rs` calls `clear_old_mails` every 3600s (deletes mail older than 7 days)
-
-### Domain configuration
-Both domains are configured via environment variables:
-- SMTP domain: `MAIL_DOMAIN` env var in Rust backend (used in `crates/smtp/src/main.rs`)
-- UI domain: `NEXT_PUBLIC_EMAIL_DOMAIN` env var in Next.js frontend (used in `ui/app/search/SearchResults.tsx`)
 
 ### Deployment
 - SMTP server: VPS with systemd, or via nixpacks (`nixpacks.toml` exposes port 25)

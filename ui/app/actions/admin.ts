@@ -398,6 +398,150 @@ export async function saveSettings(
   return { ok: true };
 }
 
+// --- System Stats ---
+
+export interface SystemStats {
+  cpu: {
+    model: string;
+    cores: number;
+    usage: number; // percentage
+  };
+  memory: {
+    total: number; // bytes
+    used: number;
+    free: number;
+    usage: number; // percentage
+  };
+  disk: {
+    total: number; // bytes
+    used: number;
+    free: number;
+    usage: number; // percentage
+  };
+  network: {
+    rx: number; // bytes received
+    tx: number; // bytes transmitted
+  };
+  uptime: number; // seconds
+  hostname: string;
+  platform: string;
+}
+
+export async function getSystemStats(): Promise<SystemStats> {
+  await requireAdmin();
+
+  const os = await import("os");
+  const { execSync } = await import("child_process");
+
+  // CPU usage: sample over 200ms
+  const cpus1 = os.cpus();
+  await new Promise((r) => setTimeout(r, 200));
+  const cpus2 = os.cpus();
+
+  let idleDiff = 0, totalDiff = 0;
+  for (let i = 0; i < cpus2.length; i++) {
+    const c1 = cpus1[i].times, c2 = cpus2[i].times;
+    const t1 = c1.user + c1.nice + c1.sys + c1.idle + c1.irq;
+    const t2 = c2.user + c2.nice + c2.sys + c2.idle + c2.irq;
+    idleDiff += c2.idle - c1.idle;
+    totalDiff += t2 - t1;
+  }
+  const cpuUsage = totalDiff > 0 ? Math.round((1 - idleDiff / totalDiff) * 1000) / 10 : 0;
+
+  // Memory
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const usedMem = totalMem - freeMem;
+
+  // Disk
+  let diskTotal = 0, diskUsed = 0, diskFree = 0;
+  try {
+    const df = execSync("df -k / | tail -1", { encoding: "utf-8" }).trim();
+    const parts = df.split(/\s+/);
+    diskTotal = parseInt(parts[1]) * 1024;
+    diskUsed = parseInt(parts[2]) * 1024;
+    diskFree = parseInt(parts[3]) * 1024;
+  } catch { /* fallback zeros */ }
+
+  // Network (cumulative bytes from /proc/net/dev or netstat)
+  let rx = 0, tx = 0;
+  try {
+    if (os.platform() === "linux") {
+      const net = execSync("cat /proc/net/dev", { encoding: "utf-8" });
+      for (const line of net.split("\n")) {
+        if (line.includes(":") && !line.includes("lo:")) {
+          const p = line.split(":")[1].trim().split(/\s+/);
+          rx += parseInt(p[0]) || 0;
+          tx += parseInt(p[8]) || 0;
+        }
+      }
+    } else {
+      const net = execSync("netstat -ib 2>/dev/null | tail -n +2", { encoding: "utf-8" });
+      for (const line of net.split("\n")) {
+        const p = line.trim().split(/\s+/);
+        if (p.length >= 10 && p[0] !== "lo0" && !p[0].startsWith("lo")) {
+          rx += parseInt(p[6]) || 0;
+          tx += parseInt(p[9]) || 0;
+        }
+      }
+    }
+  } catch { /* fallback zeros */ }
+
+  return {
+    cpu: { model: cpus1[0]?.model || "Unknown", cores: cpus1.length, usage: cpuUsage },
+    memory: { total: totalMem, used: usedMem, free: freeMem, usage: Math.round(usedMem / totalMem * 1000) / 10 },
+    disk: { total: diskTotal, used: diskUsed, free: diskFree, usage: diskTotal > 0 ? Math.round(diskUsed / diskTotal * 1000) / 10 : 0 },
+    network: { rx, tx },
+    uptime: os.uptime(),
+    hostname: os.hostname(),
+    platform: `${os.platform()} ${os.arch()}`,
+  };
+}
+
+// --- Email Stats ---
+
+export interface EmailStats {
+  today: number;
+  week: number;
+  month: number;
+  total: number;
+  dailyCounts: { date: string; count: number }[]; // last 30 days
+}
+
+export async function getEmailStats(): Promise<EmailStats> {
+  await requireAdmin();
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1).toISOString();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const [todayR, weekR, monthR, totalR, dailyR] = await Promise.all([
+    pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [todayStart]),
+    pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [weekStart]),
+    pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [monthStart]),
+    pool.query("SELECT COUNT(*)::int AS c FROM mail"),
+    pool.query(
+      `SELECT d::date::text AS date, COUNT(m.id)::int AS count
+       FROM generate_series(
+         (CURRENT_DATE - INTERVAL '29 days')::date,
+         CURRENT_DATE::date,
+         '1 day'::interval
+       ) AS d
+       LEFT JOIN mail m ON m.date::date = d::date
+       GROUP BY d::date ORDER BY d::date`
+    ),
+  ]);
+
+  return {
+    today: todayR.rows[0].c,
+    week: weekR.rows[0].c,
+    month: monthR.rows[0].c,
+    total: totalR.rows[0].c,
+    dailyCounts: dailyR.rows,
+  };
+}
+
 export async function getSiteConfig(): Promise<{
   site_name: string;
   site_logo_url: string;
