@@ -511,26 +511,39 @@ export interface EmailStats {
 export async function getEmailStats(): Promise<EmailStats> {
   await requireAdmin();
 
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + 1).toISOString();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  // Use UTC+7 for date boundaries
+  const now = new Date(Date.now() + 7 * 3600_000);
+  const y = now.getUTCFullYear(), mo = now.getUTCMonth(), d = now.getUTCDate();
+  const todayStart = new Date(Date.UTC(y, mo, d) - 7 * 3600_000).toISOString();
+  const dow = now.getUTCDay(); // 0=Sun
+  const weekStart = new Date(Date.UTC(y, mo, d - (dow === 0 ? 6 : dow - 1)) - 7 * 3600_000).toISOString();
+  const monthStart = new Date(Date.UTC(y, mo, 1) - 7 * 3600_000).toISOString();
+
+  const tz = "SET LOCAL timezone = 'Asia/Ho_Chi_Minh'";
 
   const [todayR, weekR, monthR, totalR, dailyR] = await Promise.all([
     pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [todayStart]),
     pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [weekStart]),
     pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [monthStart]),
     pool.query("SELECT COUNT(*)::int AS c FROM mail"),
-    pool.query(
-      `SELECT d::date::text AS date, COUNT(m.id)::int AS count
-       FROM generate_series(
-         (CURRENT_DATE - INTERVAL '29 days')::date,
-         CURRENT_DATE::date,
-         '1 day'::interval
-       ) AS d
-       LEFT JOIN mail m ON m.date::date = d::date
-       GROUP BY d::date ORDER BY d::date`
-    ),
+    (async () => {
+      const client = await pool.connect();
+      try {
+        await client.query(tz);
+        return await client.query(
+          `SELECT d::date::text AS date, COUNT(m.id)::int AS count
+           FROM generate_series(
+             (CURRENT_DATE - INTERVAL '29 days')::date,
+             CURRENT_DATE::date,
+             '1 day'::interval
+           ) AS d
+           LEFT JOIN mail m ON (m.date AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = d::date
+           GROUP BY d::date ORDER BY d::date`
+        );
+      } finally {
+        client.release();
+      }
+    })(),
   ]);
 
   return {

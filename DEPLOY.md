@@ -29,7 +29,15 @@ Internet ──MX record──▶ SMTP Server (port 25) ──▶ PostgreSQL ◀
 sudo apt update && sudo apt upgrade -y
 ```
 
-### 1.3. Cài các package cần thiết
+### 1.3. Tạo user hệ thống
+
+Tạo user riêng cho SMTP server — không có shell login, không SSH được:
+
+```bash
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin fluxmail
+```
+
+### 1.4. Cài các package cần thiết
 
 ```bash
 sudo apt install -y build-essential pkg-config libssl-dev curl git ufw
@@ -54,10 +62,12 @@ sudo -u postgres psql
 ```
 
 ```sql
-CREATE USER fluxmail WITH PASSWORD 'fluxmail';
+CREATE USER fluxmail WITH PASSWORD 'thay_bang_password_manh';
 CREATE DATABASE fluxmail OWNER fluxmail;
 \q
 ```
+
+> Dùng `openssl rand -base64 32` để tạo password ngẫu nhiên. Không dùng password yếu như `fluxmail` hay `123456`.
 
 > Không cần tạo table — SMTP server tự tạo schema (bảng `mail`, `quota`, `user_config`) khi khởi động lần đầu.
 
@@ -137,14 +147,21 @@ Binary nằm ở `target/release/flux-mail`.
 cat > /opt/flux-mail/.env << 'EOF'
 DB_HOST=localhost
 DB_USER=fluxmail
-DB_PASSWORD=mat_khau_manh_cua_ban
+DB_PASSWORD=password_da_tao_o_buoc_2
 DB_NAME=flux_mail
 EOF
 
 chmod 600 /opt/flux-mail/.env
+chown fluxmail:fluxmail /opt/flux-mail/.env
 ```
 
-### 3.6. Tạo systemd service
+### 3.6. Phân quyền thư mục
+
+```bash
+sudo chown -R fluxmail:fluxmail /opt/flux-mail/target
+```
+
+### 3.7. Tạo systemd service
 
 ```bash
 sudo tee /etc/systemd/system/flux-mail.service > /dev/null << 'EOF'
@@ -155,13 +172,25 @@ Requires=postgresql.service
 
 [Service]
 Type=simple
-User=root
+User=fluxmail
+Group=fluxmail
 WorkingDirectory=/opt/flux-mail
 ExecStart=/opt/flux-mail/target/release/flux-mail
 EnvironmentFile=/opt/flux-mail/.env
 Restart=always
 RestartSec=5
 LimitNOFILE=65535
+
+# Cho phép bind port 25 mà không cần root
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# Hardening — giới hạn quyền tối đa
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/opt/flux-mail
 
 [Install]
 WantedBy=multi-user.target
@@ -174,7 +203,7 @@ sudo systemctl enable flux-mail
 sudo systemctl start flux-mail
 ```
 
-### 3.7. Kiểm tra
+### 3.8. Kiểm tra
 
 ```bash
 sudo systemctl status flux-mail
@@ -388,8 +417,8 @@ sudo journalctl -u flux-ui -f
 ### Restart services
 
 ```bash
-sudo systemctl restart flux-mail
-sudo systemctl restart flux-ui
+sudo systemctl start flux-mail
+sudo systemctl stop flux-ui
 ```
 
 ### Cập nhật code
