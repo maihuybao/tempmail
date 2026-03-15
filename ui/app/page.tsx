@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 import BannerSlot from "@/components/BannerSlot";
-import { Mail, ChevronDown, Shield, Clock, Zap, Globe, ArrowRight } from "lucide-react";
+import { Mail, ChevronDown, Shield, Clock, Zap, Globe, ArrowRight, Link2 } from "lucide-react";
 import { getActiveDomains, getSiteConfig } from "@/app/actions/admin";
 import Link from "next/link";
 
@@ -15,6 +15,7 @@ export default function Home() {
   const [open, setOpen] = useState(false);
   const [siteName, setSiteName] = useState("");
   const [randomLen, setRandomLen] = useState(8);
+  const [host, setHost] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -27,6 +28,7 @@ export default function Home() {
       setSiteName(c.site_name);
       setRandomLen(c.random_email_length);
     });
+    setHost(window.location.host);
   }, []);
 
   useEffect(() => {
@@ -63,6 +65,7 @@ export default function Home() {
     { icon: Shield, title: "Private", desc: "No personal data collected or stored." },
     { icon: Clock, title: "Auto-delete", desc: "All emails are wiped after 7 days." },
     { icon: Globe, title: "Multi-domain", desc: "Choose from multiple email domains." },
+    { icon: Link2, title: "Quick URL", desc: "Access any inbox directly via URL path." },
   ];
 
   return (
@@ -146,12 +149,16 @@ export default function Home() {
           <p className="text-fg-muted text-xs">
             Public inbox &middot; Auto-deletes in 7 days
           </p>
+
+          <p className="text-fg-muted text-xs">
+            Quick access: <code className="px-1.5 py-0.5 rounded bg-bg-subtle border border-border text-fg text-xs">{host && domain ? `${host}/user@${domain}` : "example.com/user@domain.com"}</code>
+          </p>
         </div>
       </section>
 
       {/* Features */}
       <section className="px-4 sm:px-8 pb-16">
-        <div className="max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-5 gap-4">
           {features.map((f) => (
             <div key={f.title} className="rounded-xl border border-border bg-bg-subtle p-4 space-y-2 text-center">
               <div className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-accent-subtle">

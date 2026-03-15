@@ -39,8 +39,13 @@ function SearchResultsContent() {
   const paramDomain = searchParams.get("d") || "";
   const domain = paramDomain || domains[0] || "foxycrown.net";
 
+  const [domainsLoaded, setDomainsLoaded] = useState(false);
+
   useEffect(() => {
-    getActiveDomains().then(setDomains);
+    getActiveDomains().then((d) => {
+      setDomains(d);
+      setDomainsLoaded(true);
+    });
   }, []);
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,8 +58,14 @@ function SearchResultsContent() {
     if (!query) router.push("/");
   }, [query, router]);
 
+  useEffect(() => {
+    if (domainsLoaded && paramDomain && !domains.includes(paramDomain)) {
+      router.push("/");
+    }
+  }, [domainsLoaded, paramDomain, domains, router]);
+
   const fetchEmails = useCallback(async () => {
-    if (!query) return;
+    if (!query || !domainsLoaded || !domains.includes(domain)) return;
     try {
       const result = await searchEmails(`${query}@${domain}`);
       setEmails(result);
@@ -64,7 +75,7 @@ function SearchResultsContent() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [query, domain]);
+  }, [query, domain, domainsLoaded, domains]);
 
   useEffect(() => {
     fetchEmails();
