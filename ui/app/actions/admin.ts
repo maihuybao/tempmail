@@ -537,7 +537,7 @@ export async function getEmailStats(): Promise<EmailStats> {
              CURRENT_DATE::date,
              '1 day'::interval
            ) AS d
-           LEFT JOIN mail m ON (m.date AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = d::date
+           LEFT JOIN mail m ON (m.date::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = d::date
            GROUP BY d::date ORDER BY d::date`
         );
       } finally {
