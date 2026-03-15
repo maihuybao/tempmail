@@ -519,31 +519,23 @@ export async function getEmailStats(): Promise<EmailStats> {
   const weekStart = new Date(Date.UTC(y, mo, d - (dow === 0 ? 6 : dow - 1)) - 7 * 3600_000).toISOString();
   const monthStart = new Date(Date.UTC(y, mo, 1) - 7 * 3600_000).toISOString();
 
-  const tz = "SET LOCAL timezone = 'Asia/Ho_Chi_Minh'";
+  const tz = "'Asia/Ho_Chi_Minh'";
 
   const [todayR, weekR, monthR, totalR, dailyR] = await Promise.all([
     pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [todayStart]),
     pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [weekStart]),
     pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [monthStart]),
     pool.query("SELECT COUNT(*)::int AS c FROM mail"),
-    (async () => {
-      const client = await pool.connect();
-      try {
-        await client.query(tz);
-        return await client.query(
-          `SELECT d::date::text AS date, COUNT(m.id)::int AS count
-           FROM generate_series(
-             (CURRENT_DATE - INTERVAL '29 days')::date,
-             CURRENT_DATE::date,
-             '1 day'::interval
-           ) AS d
-           LEFT JOIN mail m ON (m.date::timestamp AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')::date = d::date
-           GROUP BY d::date ORDER BY d::date`
-        );
-      } finally {
-        client.release();
-      }
-    })(),
+    pool.query(
+      `SELECT d::date::text AS date, COUNT(m.id)::int AS count
+       FROM generate_series(
+         (NOW() AT TIME ZONE ${tz} - INTERVAL '29 days')::date,
+         (NOW() AT TIME ZONE ${tz})::date,
+         '1 day'::interval
+       ) AS d
+       LEFT JOIN mail m ON (m.date::timestamp AT TIME ZONE 'UTC' AT TIME ZONE ${tz})::date = d::date
+       GROUP BY d::date ORDER BY d::date`
+    ),
   ]);
 
   return {
