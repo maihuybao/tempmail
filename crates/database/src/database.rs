@@ -91,7 +91,7 @@ impl DatabaseClient {
     pub async fn add_mail(&self, data: Email) -> Result<u64, Box<dyn Error>> {
         let sql: &str = "INSERT INTO mail (date, sender, recipients, data) VALUES ($1, $2, $3, $4)";
         let date: String = chrono::Utc::now()
-            .format("%Y-%m-%d %H:%M:%S%.3f")
+            .format("%Y-%m-%dT%H:%M:%S%.3fZ")
             .to_string();
 
         match self
@@ -113,7 +113,7 @@ impl DatabaseClient {
     pub async fn delete_old_mail(&self) -> Result<u64, Box<dyn Error>> {
         let now: DateTime<chrono::Utc> = chrono::offset::Utc::now();
         let a_week_ago: DateTime<chrono::Utc> = now - chrono::Duration::days(7);
-        let a_week_ago: String = a_week_ago.format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+        let a_week_ago: String = a_week_ago.format("%Y-%m-%dT%H:%M:%S%.3fZ").to_string();
 
         info!("Deleting old mail from before {a_week_ago}");
         match self
