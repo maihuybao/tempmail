@@ -505,6 +505,8 @@ export interface EmailStats {
   week: number;
   month: number;
   total: number;
+  uniqueAddresses: number;
+  activeDomains: number;
   dailyCounts: { date: string; count: number }[]; // last 30 days
 }
 
@@ -521,7 +523,7 @@ export async function getEmailStats(): Promise<EmailStats> {
 
   const tz = "'Asia/Ho_Chi_Minh'";
 
-  const [todayR, weekR, monthR, totalR, dailyR] = await Promise.all([
+  const [todayR, weekR, monthR, totalR, dailyR, uniqueR, domainsR] = await Promise.all([
     pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [todayStart]),
     pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [weekStart]),
     pool.query("SELECT COUNT(*)::int AS c FROM mail WHERE date >= $1", [monthStart]),
@@ -536,6 +538,8 @@ export async function getEmailStats(): Promise<EmailStats> {
        LEFT JOIN mail m ON (safe_timestamp(m.date) AT TIME ZONE 'UTC' AT TIME ZONE ${tz})::date = d::date
        GROUP BY d::date ORDER BY d::date`
     ),
+    pool.query("SELECT COUNT(DISTINCT recipients)::int AS c FROM mail"),
+    pool.query("SELECT COUNT(*)::int AS c FROM domains WHERE enabled = true"),
   ]);
 
   return {
@@ -543,6 +547,8 @@ export async function getEmailStats(): Promise<EmailStats> {
     week: weekR.rows[0].c,
     month: monthR.rows[0].c,
     total: totalR.rows[0].c,
+    uniqueAddresses: uniqueR.rows[0].c,
+    activeDomains: domainsR.rows[0].c,
     dailyCounts: dailyR.rows,
   };
 }

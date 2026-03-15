@@ -14,6 +14,8 @@ import {
   CalendarDays,
   CalendarRange,
   Database,
+  Globe,
+  Users,
 } from "lucide-react";
 
 function formatBytes(bytes: number): string {
@@ -247,11 +249,13 @@ export default function AdminDashboardPage() {
       {emailStats && (
         <>
           <h2 className="text-sm font-semibold text-fg-muted pt-2">Email Statistics</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <StatCard icon={Mail} title="Today" value={emailStats.today.toLocaleString()} />
             <StatCard icon={CalendarDays} title="This Week" value={emailStats.week.toLocaleString()} />
             <StatCard icon={CalendarRange} title="This Month" value={emailStats.month.toLocaleString()} />
             <StatCard icon={Database} title="All Time" value={emailStats.total.toLocaleString()} />
+            <StatCard icon={Users} title="Addresses" value={emailStats.uniqueAddresses.toLocaleString()} />
+            <StatCard icon={Globe} title="Domains" value={emailStats.activeDomains.toLocaleString()} />
           </div>
           <BarChart data={emailStats.dailyCounts} />
         </>
