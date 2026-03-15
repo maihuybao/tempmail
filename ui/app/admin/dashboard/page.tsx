@@ -134,21 +134,25 @@ export default function AdminDashboardPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const [s, e] = await Promise.all([getSystemStats(), getEmailStats()]);
-      // calc network speed
-      const now = Date.now();
-      if (prevNetwork.current) {
-        const dt = (now - prevNetwork.current.ts) / 1000;
-        if (dt > 0) {
-          setNetSpeed({
-            rx: Math.max(0, (s.network.rx - prevNetwork.current.rx) / dt),
-            tx: Math.max(0, (s.network.tx - prevNetwork.current.tx) / dt),
-          });
+      const [s, e] = await Promise.allSettled([getSystemStats(), getEmailStats()]);
+      if (s.status === "fulfilled") {
+        const sVal = s.value;
+        const now = Date.now();
+        if (prevNetwork.current) {
+          const dt = (now - prevNetwork.current.ts) / 1000;
+          if (dt > 0) {
+            setNetSpeed({
+              rx: Math.max(0, (sVal.network.rx - prevNetwork.current.rx) / dt),
+              tx: Math.max(0, (sVal.network.tx - prevNetwork.current.tx) / dt),
+            });
+          }
         }
+        prevNetwork.current = { rx: sVal.network.rx, tx: sVal.network.tx, ts: now };
+        setStats(sVal);
       }
-      prevNetwork.current = { rx: s.network.rx, tx: s.network.tx, ts: now };
-      setStats(s);
-      setEmailStats(e);
+      if (e.status === "fulfilled") {
+        setEmailStats(e.value);
+      }
     } catch (e) {
       console.error("Failed to fetch stats:", e);
     } finally {
