@@ -9,7 +9,7 @@ import {
 } from "@/app/actions/admin";
 import {
   Trash2, ChevronLeft, ChevronRight, Inbox, ArrowLeft,
-  Search, ArrowUpDown, Pencil, X,
+  Search, ArrowUpDown, Pencil, X, RefreshCw,
 } from "lucide-react";
 import { inputClass } from "@/lib/ui";
 import { toast } from "sonner";
@@ -35,6 +35,7 @@ export default function AdminEmailsPage() {
   const [sortDir, setSortDir] = useState<"ASC" | "DESC">("DESC");
   const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [saving, setSaving] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>(null);
   const pageSize = 30;
 
@@ -52,6 +53,12 @@ export default function AdminEmailsPage() {
   );
 
   useEffect(() => { fetchPage(1); }, [fetchPage]);
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = setInterval(() => fetchPage(page, search, sortDir), 5000);
+    return () => clearInterval(id);
+  }, [autoRefresh, page, search, sortDir, fetchPage]);
 
   const handleSearch = (value: string) => {
     setSearch(value);
@@ -161,7 +168,18 @@ export default function AdminEmailsPage() {
       {editModal}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Emails</h1>
-        <span className="text-sm text-fg-muted">{total} total</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors ${
+              autoRefresh ? "bg-accent-subtle text-accent" : "bg-bg-hover text-fg-muted"
+            }`}
+          >
+            <RefreshCw className={`w-3 h-3 ${autoRefresh ? "animate-spin" : ""}`} style={autoRefresh ? { animationDuration: "3s" } : {}} />
+            {autoRefresh ? "Auto" : "Paused"}
+          </button>
+          <span className="text-sm text-fg-muted">{total} total</span>
+        </div>
       </div>
 
       {/* Search + sort */}
